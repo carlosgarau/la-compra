@@ -13,6 +13,7 @@ import {
   isPerishable,
   makeItem,
   markExpirationAlerted,
+  parseEntry,
   parseSpokenList,
   registerPurchase,
   registerRequest,
@@ -375,6 +376,54 @@ function localDateValue(date = new Date()) {
   return `${year}-${month}-${day}`;
 }
 
+function saveExtraPurchase(entry, expiresOn, askPermission = false) {
+  const now = Date.now();
+  registerPurchase(state, entry, now);
+  addExpiration(state, entry, expiresOn, now);
+  saveState();
+  render();
+  navigate("ideas");
+  const message = `Caducidad guardada para ${entry.name}`;
+  showToast(message);
+  speak(`${message}. Te avisaré cuando falten tres días y un día.`);
+  if (askPermission) requestNotificationPermission();
+  setTimeout(checkExpirationAlerts, 150);
+}
+
+function openExtraExpirationDialog(command = {}) {
+  $("#extraProductInput").value = command.entry?.name || "";
+  $("#extraExpirationInput").value = command.expiresOn || "";
+  $("#extraExpirationInput").min = localDateValue();
+  $("#extraExpirationDialog").showModal();
+  const missing = command.entry ? "¿Cuándo caduca?" : "¿Qué producto extra has comprado y cuándo caduca?";
+  speak(missing);
+  setTimeout(() => (command.entry ? $("#extraExpirationInput") : $("#extraProductInput")).focus(), 50);
+}
+
+function handleExtraExpirationCommand(command) {
+  if (command.entry && command.expiresOn) {
+    saveExtraPurchase(command.entry, command.expiresOn);
+    return;
+  }
+  openExtraExpirationDialog(command);
+}
+
+function saveExtraExpirationFromDialog() {
+  const productInput = $("#extraProductInput");
+  const expirationInput = $("#extraExpirationInput");
+  if (!productInput.value.trim()) {
+    productInput.reportValidity();
+    return;
+  }
+  if (!expirationInput.value) {
+    expirationInput.reportValidity();
+    return;
+  }
+  const entry = parseEntry(productInput.value);
+  $("#extraExpirationDialog").close();
+  saveExtraPurchase(entry, expirationInput.value, true);
+}
+
 function showNextExpirationPrompt() {
   currentExpirationPrompt = expirationPromptQueue.shift() || null;
   if (!currentExpirationPrompt) {
@@ -526,7 +575,29 @@ function handleVoiceText(text) {
   if (command.type === "shopping") return enterShoppingMode();
   if (command.type === "finish") return requestFinishShopping();
   if (command.type === "read") return readList();
+  if (command.type === "show-list") {
+    navigate("list");
+    showToast(shoppingSummary(state.items));
+    return;
+  }
+  if (command.type === "extra-expiration") return handleExtraExpirationCommand(command);
   addEntries(command.entries, { fromVoice: true });
+}
+
+function handleLaunchCommand() {
+  const url = new URL(window.location.href);
+  const command = url.searchParams.get("command");
+  const directAdd = url.searchParams.get("add");
+  if (!command && !directAdd) return;
+  url.searchParams.delete("command");
+  url.searchParams.delete("add");
+  window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
+  const spoken = command || `agrega ${directAdd}`;
+  $("#liveTranscript").textContent = spoken;
+  setTimeout(() => {
+    handleVoiceText(spoken);
+    setTimeout(() => { $("#liveTranscript").textContent = ""; }, 3000);
+  }, 300);
 }
 
 function startVoice() {
@@ -635,6 +706,8 @@ $("#expirationDateSave").addEventListener("click", saveExpirationDate);
 $("#expirationDateSkip").addEventListener("click", skipExpirationDate);
 $("#expirationConsumedYes").addEventListener("click", () => resolveExpirationAlert(true));
 $("#expirationConsumedNo").addEventListener("click", () => resolveExpirationAlert(false));
+$("#extraExpirationSave").addEventListener("click", saveExtraExpirationFromDialog);
+$("#extraExpirationCancel").addEventListener("click", () => $("#extraExpirationDialog").close());
 
 document.addEventListener("click", (event) => {
   const nav = event.target.closest("[data-nav]");
@@ -693,4 +766,5 @@ document.addEventListener("visibilitychange", () => {
 });
 
 render();
+handleLaunchCommand();
 setTimeout(checkExpirationAlerts, 500);

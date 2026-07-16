@@ -148,6 +148,29 @@
       </div>
     </dialog>
 
+    <dialog class="app-dialog" id="extraExpirationDialog">
+      <div class="dialog-icon expiration-icon">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h14v16H5zM8 3v4M16 3v4M8 11h8M8 15h5"/><path d="M18 14v6M15 17h6"/></svg>
+      </div>
+      <span class="eyebrow">COMPRA EXTRA</span>
+      <h2>Guardar producto y caducidad</h2>
+      <p>Lo añadiré al historial aunque no estuviera en la lista.</p>
+      <div class="extra-purchase-fields">
+        <label>
+          <span>Producto comprado</span>
+          <input id="extraProductInput" type="text" placeholder="Por ejemplo, hamburguesas" autocomplete="off" required />
+        </label>
+        <label>
+          <span>Fecha de caducidad</span>
+          <input id="extraExpirationInput" type="date" required />
+        </label>
+      </div>
+      <div class="dialog-actions">
+        <button class="primary" id="extraExpirationSave" type="button">Guardar producto</button>
+        <button class="secondary" id="extraExpirationCancel" type="button">Cancelar</button>
+      </div>
+    </dialog>
+
     <dialog class="app-dialog expiration-alert-dialog" id="expirationAlertDialog">
       <div class="dialog-icon expiration-warning-icon">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2.8 20h18.4L12 3Z"/><path d="M12 9v5M12 17h.01"/></svg>
