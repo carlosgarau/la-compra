@@ -13,7 +13,9 @@ import {
   isPerishable,
   markExpirationAlerted,
   parseEntry,
+  parseExtraPurchaseCommand,
   parseSpokenList,
+  parseSpokenExpiryDate,
   productKey,
   registerPurchase,
   registerRequest,
@@ -47,6 +49,26 @@ test("reconoce comandos de compra", () => {
   assert.equal(detectVoiceCommand("¿Qué hay en la lista de la compra?").type, "read");
   assert.equal(detectVoiceCommand("Léeme la lista").type, "read");
   assert.equal(detectVoiceCommand("He terminado la compra").type, "finish");
+  assert.equal(detectVoiceCommand("Hazme la lista final que voy a comprar").type, "shopping");
+  assert.equal(detectVoiceCommand("Muéstrame la lista de la compra").type, "show-list");
+});
+
+test("entiende fechas de caducidad dichas en voz alta", () => {
+  const now = new Date(2026, 6, 16, 10).getTime();
+  assert.equal(parseSpokenExpiryDate("caducan en tres días", now), "2026-07-19");
+  assert.equal(parseSpokenExpiryDate("caduca el 25 de julio", now), "2026-07-25");
+  assert.equal(parseSpokenExpiryDate("caduca mañana", now), "2026-07-17");
+});
+
+test("registra una compra extra con producto y fecha dictados", () => {
+  const now = new Date(2026, 6, 16, 10).getTime();
+  const command = parseExtraPurchaseCommand("He comprado hamburguesas extra que caducan en tres días", now);
+  assert.equal(command.type, "extra-expiration");
+  assert.equal(command.entry.key, "hamburguesa");
+  assert.equal(command.expiresOn, "2026-07-19");
+  const incomplete = detectVoiceCommand("He comprado algo extra que caduque");
+  assert.equal(incomplete.type, "extra-expiration");
+  assert.equal(incomplete.entry, null);
 });
 
 test("sugiere un producto olvidado según el historial", () => {

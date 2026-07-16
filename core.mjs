@@ -93,7 +93,7 @@ const ALIASES = {
   "alcachofas": "alcachofa", "arandanos": "arandano", "berenjenas": "berenjena",
   "calabacines": "calabacin", "cebollas": "cebolla", "cerezas": "cereza",
   "cervezas": "cerveza", "ciruelas": "ciruela", "fresas": "fresa", "galletas": "galleta",
-  "garbanzos": "garbanzo", "higos": "higo", "huevos": "huevo", "judias verdes": "judia verde",
+  "garbanzos": "garbanzo", "hamburguesas": "hamburguesa", "higos": "higo", "huevos": "huevo", "judias verdes": "judia verde",
   "lechugas": "lechuga", "leches": "leche", "limones": "limon", "latas de atun": "atun",
   "macarrones": "macarron", "mandarinas": "mandarina", "manzanas": "manzana",
   "melocotones": "melocoton", "naranjas": "naranja", "nectarinas": "nectarina",
@@ -224,9 +224,93 @@ export function parseSpokenList(value) {
   return splitListText(text).map(parseEntry).filter((entry) => entry.key);
 }
 
+function dateValue(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+export function parseSpokenExpiryDate(value, now = Date.now()) {
+  const normalized = normalizeText(value);
+  const base = new Date(now);
+
+  const iso = normalized.match(/\b(20\d{2})-(\d{1,2})-(\d{1,2})\b/);
+  if (iso) return `${iso[1]}-${String(iso[2]).padStart(2, "0")}-${String(iso[3]).padStart(2, "0")}`;
+
+  const numeric = normalized.match(/\b(\d{1,2})[/-](\d{1,2})(?:[/-](\d{2,4}))?\b/);
+  if (numeric) {
+    let year = numeric[3] ? Number(numeric[3]) : base.getFullYear();
+    if (year < 100) year += 2000;
+    return dateValue(new Date(year, Number(numeric[2]) - 1, Number(numeric[1])));
+  }
+
+  let offset = null;
+  if (/\bpasado manana\b/.test(normalized)) offset = 2;
+  else if (/\bmanana\b/.test(normalized)) offset = 1;
+  else if (/\bhoy\b/.test(normalized)) offset = 0;
+  const relative = normalized.match(/\ben\s+(\d+|un|uno|una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|once|doce)\s+dias?\b/);
+  if (relative) offset = NUMBER_WORDS[relative[1]] ?? Number(relative[1]);
+  if (offset !== null) {
+    base.setDate(base.getDate() + offset);
+    return dateValue(base);
+  }
+
+  const months = {
+    enero: 0, febrero: 1, marzo: 2, abril: 3, mayo: 4, junio: 5,
+    julio: 6, agosto: 7, septiembre: 8, octubre: 9, noviembre: 10, diciembre: 11,
+  };
+  const namedDate = normalized.match(/\b(\d{1,2})\s+de\s+(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)(?:\s+de\s+(20\d{2}))?\b/);
+  if (namedDate) {
+    let year = namedDate[3] ? Number(namedDate[3]) : base.getFullYear();
+    const candidate = new Date(year, months[namedDate[2]], Number(namedDate[1]));
+    if (!namedDate[3] && candidate < new Date(base.getFullYear(), base.getMonth(), base.getDate())) candidate.setFullYear(year + 1);
+    return dateValue(candidate);
+  }
+
+  const weekdays = { domingo: 0, lunes: 1, martes: 2, miercoles: 3, jueves: 4, viernes: 5, sabado: 6 };
+  const weekday = normalized.match(/\b(domingo|lunes|martes|miercoles|jueves|viernes|sabado)\b/);
+  if (weekday) {
+    const difference = (weekdays[weekday[1]] - base.getDay() + 7) % 7;
+    base.setDate(base.getDate() + difference);
+    return dateValue(base);
+  }
+
+  return "";
+}
+
+export function parseExtraPurchaseCommand(value, now = Date.now()) {
+  const normalized = normalizeText(value);
+  if (!/(he comprado|hemos comprado|compre)\b/.test(normalized) || !/(extra|caduc|caduq)/.test(normalized)) return null;
+
+  const spoken = String(value);
+  const detailMatch = spoken.match(/(?:he|hemos)\s+comprado\s+(.+)/i) || spoken.match(/compr[eé]\s+(.+)/i);
+  let productText = detailMatch?.[1] || "";
+  productText = productText
+    .replace(/\b(?:que|y)\s+cadu(?:c|q)\w*.*$/i, "")
+    .replace(/\b(?:algo|un producto|una cosa|producto)\b/gi, "")
+    .replace(/\bextra\b/gi, "")
+    .replace(/^[\s,:;-]+|[\s,:;-]+$/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  const entry = productText ? parseEntry(productText) : null;
+  return {
+    type: "extra-expiration",
+    entry: entry?.key ? entry : null,
+    expiresOn: parseSpokenExpiryDate(value, now),
+  };
+}
+
 export function detectVoiceCommand(value) {
   const normalized = normalizeText(value);
-  if (/^(voy|vamos) a (hacer )?la compra$/.test(normalized) || normalized === "modo compra") {
+  const extraPurchase = parseExtraPurchaseCommand(value);
+  if (extraPurchase) return extraPurchase;
+  if (
+    /^(voy|vamos) a (hacer )?la compra$/.test(normalized)
+    || /^(voy|vamos) a comprar$/.test(normalized)
+    || /^(hazme|prepara|preparame) la lista final( que voy a comprar)?$/.test(normalized)
+    || ["modo compra", "lista final", "preparar la compra"].includes(normalized)
+  ) {
     return { type: "shopping" };
   }
   if (/^(he |hemos )?(terminado|acabado)( la compra)?$/.test(normalized) || /^(terminar|finalizar|fin de) compra$/.test(normalized)) {
@@ -234,6 +318,9 @@ export function detectVoiceCommand(value) {
   }
   if (/^que (hay|tenemos) (en )?(la|mi) lista/.test(normalized) || ["leer la lista", "leeme la lista", "dime que hay en la lista"].includes(normalized)) {
     return { type: "read" };
+  }
+  if (/^(abre|muestra|muestrame|ensena|ensename) (la|mi) lista( de la compra)?$/.test(normalized)) {
+    return { type: "show-list" };
   }
   return { type: "add", entries: parseSpokenList(value) };
 }

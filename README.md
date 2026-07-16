@@ -18,9 +18,12 @@ Una lista de la compra familiar pensada para usarla con una mano y por voz.
 ## Frases útiles
 
 - “Leche, pan y dos kilos de patatas”.
+- “Agrega tomates”.
 - “Voy a hacer la compra”.
+- “Hazme la lista final que voy a comprar”.
 - “¿Qué hay en la lista de la compra?”.
 - “Léeme la lista”.
+- “He comprado hamburguesas extra que caducan en tres días”.
 - “He terminado la compra”.
 
 ## Caducidades
@@ -40,8 +43,10 @@ La aplicación debe publicarse primero en una dirección HTTPS. Después:
 
 ## Uso con Siri
 
-En esta primera versión puedes decir **“Oye Siri, abre La compra”** y tocar el micrófono. Después puedes dictar productos o preguntar **“¿Qué hay en la lista de la compra?”**; la aplicación responderá en voz alta.
+El atajo del iPhone se llama **“Abre la lista de la compra”**. Al invocarlo con Siri, pregunta **“¿Qué quieres hacer?”**, codifica la respuesta dentro de una URL y abre:
 
-Para que Siri añada y lea productos directamente, sin abrir la aplicación ni tocar el micrófono, hará falta una segunda fase con un Atajo conectado a un servicio privado o una aplicación nativa para iPhone.
+`https://carlosgarau.github.io/la-compra/?command=RESPUESTA`
+
+La aplicación interpreta la respuesta al abrirse. Puede añadir productos, leer la lista, mostrarla agrupada para ir tachando o registrar una compra extra con su fecha de caducidad. Si en la compra extra se dicen a la vez el producto y la fecha —por ejemplo, **“He comprado hamburguesas extra que caducan en tres días”**— queda registrada sin tocar la pantalla.
 
 Para probarla en un ordenador, sirve esta carpeta con un servidor web local. Abrir `index.html` directamente no permite todas las funciones del micrófono ni el modo sin conexión.

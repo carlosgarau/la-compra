@@ -217,6 +217,9 @@ dialog::backdrop { background: rgba(26,35,29,.42); backdrop-filter: blur(5px); }
 .expiration-date-field span { display: block; margin-bottom: 7px; color: var(--muted); font-size: 10px; font-weight: 750; }
 .expiration-date-field input { width: 100%; min-height: 48px; padding: 0 13px; border: 1px solid var(--line); border-radius: 13px; color: var(--ink); background: #fff; font: inherit; }
 .expiration-alert-dialog h2 { font-size: 24px; }
+.extra-purchase-fields { display: grid; gap: 11px; margin: -4px 0 20px; text-align: left; }
+.extra-purchase-fields label span { display: block; margin-bottom: 6px; color: var(--muted); font-size: 10px; font-weight: 750; }
+.extra-purchase-fields input { width: 100%; min-height: 47px; padding: 0 13px; border: 1px solid var(--line); border-radius: 13px; color: var(--ink); background: #fff; font: inherit; }
 
 .settings-sheet { position: fixed; top: auto; bottom: 0; max-height: 88vh; margin-bottom: 0; padding: 14px 23px calc(26px + env(safe-area-inset-bottom)); border-radius: 28px 28px 0 0; }
 .sheet-handle { width: 43px; height: 5px; margin: 0 auto 18px; border-radius: 99px; background: #d2d2cc; }
