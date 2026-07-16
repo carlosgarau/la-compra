@@ -131,6 +131,36 @@
       </div>
     </dialog>
 
+    <dialog class="app-dialog" id="expirationDateDialog">
+      <div class="dialog-icon expiration-icon">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3v3M17 3v3M4 9h16M5 5h14v16H5z"/><path d="m9 15 2 2 4-5"/></svg>
+      </div>
+      <span class="eyebrow">CONTROL DE CADUCIDAD</span>
+      <h2 id="expirationDateTitle">¿Cuándo caduca?</h2>
+      <p>Te avisaré cuando falten 3 días y volveré a preguntarte cuando falte 1.</p>
+      <label class="expiration-date-field">
+        <span>Fecha de caducidad o consumo preferente</span>
+        <input id="expirationDateInput" type="date" required />
+      </label>
+      <div class="dialog-actions">
+        <button class="primary" id="expirationDateSave" type="button">Guardar fecha</button>
+        <button class="secondary" id="expirationDateSkip" type="button">Este producto no lo necesita</button>
+      </div>
+    </dialog>
+
+    <dialog class="app-dialog expiration-alert-dialog" id="expirationAlertDialog">
+      <div class="dialog-icon expiration-warning-icon">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2.8 20h18.4L12 3Z"/><path d="M12 9v5M12 17h.01"/></svg>
+      </div>
+      <span class="eyebrow">CADUCIDAD PRÓXIMA</span>
+      <h2 id="expirationAlertTitle"></h2>
+      <p id="expirationAlertText"></p>
+      <div class="dialog-actions">
+        <button class="primary" id="expirationConsumedYes" type="button">Sí, ya está consumido</button>
+        <button class="secondary" id="expirationConsumedNo" type="button">No, todavía</button>
+      </div>
+    </dialog>
+
     <dialog class="settings-sheet" id="settingsDialog">
       <div class="sheet-handle"></div>
       <div class="sheet-heading">

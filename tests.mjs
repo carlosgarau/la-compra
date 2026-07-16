@@ -1,11 +1,17 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  addExpiration,
   categoryFor,
   createInitialState,
   detectVoiceCommand,
+  getActiveExpirations,
+  getPendingExpirationAlerts,
   getSuggestions,
   groupItems,
+  isFreezable,
+  isPerishable,
+  markExpirationAlerted,
   parseEntry,
   parseSpokenList,
   productKey,
@@ -60,4 +66,25 @@ test("no sugiere algo que ya está en la lista", () => {
   registerPurchase(state, { ...entry, id: "1" }, 0);
   state.items.push({ ...entry, id: "2", checked: false });
   assert.equal(getSuggestions(state, 50 * 86_400_000).remembered.length, 0);
+});
+
+test("detecta productos delicados y cuáles se pueden congelar", () => {
+  assert.equal(isPerishable(parseEntry("hamburguesas")), true);
+  assert.equal(isFreezable(parseEntry("hamburguesas")), true);
+  assert.equal(isPerishable(parseEntry("detergente")), false);
+  assert.equal(isFreezable(parseEntry("yogures")), false);
+});
+
+test("avisa a tres días y vuelve a avisar a un día", () => {
+  const state = createInitialState();
+  const item = parseEntry("hamburguesas");
+  const firstCheck = new Date(2026, 6, 16, 10).getTime();
+  const expiration = addExpiration(state, item, "2026-07-19", firstCheck);
+  assert.equal(getActiveExpirations(state, firstCheck)[0].daysLeft, 3);
+  assert.equal(getPendingExpirationAlerts(state, firstCheck)[0].threshold, 3);
+
+  markExpirationAlerted(state, expiration.id, 3);
+  assert.equal(getPendingExpirationAlerts(state, firstCheck).length, 0);
+  const secondCheck = new Date(2026, 6, 18, 10).getTime();
+  assert.equal(getPendingExpirationAlerts(state, secondCheck)[0].threshold, 1);
 });

@@ -28,6 +28,18 @@ export const CATEGORY_META = {
   Otros: { icon: "basket", color: "#706c65" },
 };
 
+export const PERISHABLE_CATEGORIES = new Set([
+  "Fruta y verdura",
+  "Carne y pescado",
+  "Lácteos y huevos",
+]);
+
+const FREEZABLE_KEYWORDS = [
+  "hamburguesa", "pan", "fresa", "frambuesa", "arandano", "platano", "banana",
+  "mango", "espinaca", "brocoli", "coliflor", "guisante", "judia verde", "pimiento",
+  "calabacin", "mantequilla", "queso rallado",
+];
+
 const CATEGORY_KEYWORDS = {
   "Bebés y niños": [
     "panal", "pañal", "toallita", "potito", "papilla", "leche infantil",
@@ -232,6 +244,7 @@ export function createInitialState() {
     items: [],
     catalog: {},
     purchases: [],
+    expirations: [],
     dismissedSuggestions: {},
     settings: { speak: true },
   };
@@ -246,6 +259,7 @@ export function hydrateState(raw) {
     items: Array.isArray(raw.items) ? raw.items : [],
     catalog: raw.catalog && typeof raw.catalog === "object" ? raw.catalog : {},
     purchases: Array.isArray(raw.purchases) ? raw.purchases : [],
+    expirations: Array.isArray(raw.expirations) ? raw.expirations : [],
     dismissedSuggestions: raw.dismissedSuggestions && typeof raw.dismissedSuggestions === "object"
       ? raw.dismissedSuggestions
       : {},
@@ -298,6 +312,68 @@ export function registerPurchase(state, item, now = Date.now()) {
     purchasedAt: new Date(now).toISOString(),
   });
   state.purchases = state.purchases.slice(0, 500);
+}
+
+export function isPerishable(item) {
+  return PERISHABLE_CATEGORIES.has(item?.category);
+}
+
+export function isFreezable(item) {
+  if (item?.category === "Carne y pescado") return true;
+  const normalized = normalizeText(item?.key || item?.name || "");
+  return FREEZABLE_KEYWORDS.some((keyword) => normalized.includes(keyword));
+}
+
+function localDayStamp(value) {
+  if (typeof value === "number") {
+    const date = new Date(value);
+    return Date.UTC(date.getFullYear(), date.getMonth(), date.getDate());
+  }
+  const match = String(value || "").match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!match) return Number.NaN;
+  return Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+}
+
+export function expirationDaysLeft(expiresOn, now = Date.now()) {
+  return Math.round((localDayStamp(expiresOn) - localDayStamp(now)) / DAY);
+}
+
+export function addExpiration(state, item, expiresOn, now = Date.now()) {
+  if (!Number.isFinite(localDayStamp(expiresOn))) throw new Error("Fecha de caducidad no válida");
+  const expiration = {
+    id: globalThis.crypto?.randomUUID?.() || `${now}-${Math.random().toString(16).slice(2)}`,
+    key: item.key,
+    name: item.name,
+    category: item.category,
+    expiresOn: String(expiresOn).slice(0, 10),
+    createdAt: new Date(now).toISOString(),
+    consumedAt: null,
+    alertsSent: [],
+  };
+  state.expirations.unshift(expiration);
+  state.expirations = state.expirations.slice(0, 300);
+  return expiration;
+}
+
+export function getActiveExpirations(state, now = Date.now()) {
+  return (state.expirations || [])
+    .filter((entry) => !entry.consumedAt)
+    .map((entry) => ({ ...entry, daysLeft: expirationDaysLeft(entry.expiresOn, now) }))
+    .sort((a, b) => a.daysLeft - b.daysLeft || a.name.localeCompare(b.name, "es"));
+}
+
+export function getPendingExpirationAlerts(state, now = Date.now()) {
+  return getActiveExpirations(state, now).flatMap((entry) => {
+    const threshold = entry.daysLeft <= 1 ? 1 : entry.daysLeft <= 3 ? 3 : null;
+    if (!threshold || (entry.alertsSent || []).includes(threshold)) return [];
+    return [{ ...entry, threshold }];
+  });
+}
+
+export function markExpirationAlerted(state, expirationId, threshold) {
+  const entry = (state.expirations || []).find((candidate) => candidate.id === expirationId);
+  if (!entry) return;
+  entry.alertsSent = [...new Set([...(entry.alertsSent || []), threshold])];
 }
 
 export function groupItems(items) {

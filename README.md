@@ -8,6 +8,8 @@ Una lista de la compra familiar pensada para usarla con una mano y por voz.
 - Detecta productos repetidos y pregunta si debe aumentar la cantidad.
 - Agrupa automáticamente por familias.
 - Guarda por separado lo pedido y lo realmente comprado.
+- Al terminar, pregunta la caducidad de los productos más delicados.
+- Avisa cuando quedan 3 días y 1 día, pregunta si ya se han consumido y recomienda congelarlos cuando corresponde.
 - Recuerda productos que hace tiempo que no se compran.
 - Sugiere frutas y verduras que suelen estar de temporada cada mes.
 - Funciona sin conexión después de abrirla por primera vez.
@@ -20,6 +22,12 @@ Una lista de la compra familiar pensada para usarla con una mano y por voz.
 - “¿Qué hay en la lista de la compra?”.
 - “Léeme la lista”.
 - “He terminado la compra”.
+
+## Caducidades
+
+Al guardar una compra, la aplicación pregunta la fecha de los productos frescos, la carne, el pescado y los lácteos. Los avisos aparecen en **Ideas** y se repiten al entrar en los tramos de 3 días y 1 día. En el segundo aviso, si el producto admite congelación, propone congelarlo ese mismo día.
+
+La aplicación solicita permiso para mostrar notificaciones y comprueba las fechas al abrirse o volver al primer plano. Desde cada aviso se puede indicar que el producto ya está consumido para dejar de recibir recordatorios.
 
 ## Instalación en iPhone
 

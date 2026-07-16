@@ -1,12 +1,18 @@
 import {
+  addExpiration,
   CATEGORY_META,
   createInitialState,
   detectVoiceCommand,
   formatAmount,
+  getActiveExpirations,
+  getPendingExpirationAlerts,
   getSuggestions,
   groupItems,
   hydrateState,
+  isFreezable,
+  isPerishable,
   makeItem,
+  markExpirationAlerted,
   parseSpokenList,
   registerPurchase,
   registerRequest,
@@ -37,6 +43,10 @@ let activeView = "list";
 let shoppingMode = false;
 let duplicateQueue = [];
 let currentDuplicate = null;
+let expirationPromptQueue = [];
+let currentExpirationPrompt = null;
+let expirationAlertQueue = [];
+let currentExpirationAlert = null;
 let recognition = null;
 let toastTimer = null;
 
@@ -145,11 +155,15 @@ function renderItem(item) {
 
 function renderIdeas() {
   const { remembered, seasonal } = getSuggestions(state);
+  const expirations = getActiveExpirations(state);
   const content = $("#ideasContent");
-  const total = remembered.length + seasonal.length;
+  const total = remembered.length + seasonal.length + expirations.filter((entry) => entry.daysLeft <= 3).length;
   $("#ideaDot").classList.toggle("visible", total > 0);
 
   const blocks = [];
+  if (expirations.length) {
+    blocks.push(expirationBlock(expirations));
+  }
   if (remembered.length) {
     blocks.push(suggestionBlock("Puede que falte", "Según vuestro historial", remembered, "history"));
   }
@@ -165,6 +179,35 @@ function renderIdeas() {
       </div>`);
   }
   content.innerHTML = blocks.join("");
+}
+
+function expirationLabel(daysLeft) {
+  if (daysLeft < 0) return `Caducó hace ${Math.abs(daysLeft)} ${Math.abs(daysLeft) === 1 ? "día" : "días"}`;
+  if (daysLeft === 0) return "Caduca hoy";
+  if (daysLeft === 1) return "Caduca mañana";
+  return `Caduca en ${daysLeft} días`;
+}
+
+function expirationBlock(expirations) {
+  return `
+    <section class="expiration-section">
+      <div class="suggestion-heading"><div><h2>Caducidades</h2><p>Lo más delicado, ordenado por urgencia</p></div></div>
+      <div class="expiration-list">
+        ${expirations.map((entry) => {
+          const urgency = entry.daysLeft <= 1 ? "urgent" : entry.daysLeft <= 3 ? "soon" : "";
+          const date = new Date(`${entry.expiresOn}T12:00:00`).toLocaleDateString("es-ES", { day: "numeric", month: "long" });
+          const freezeHint = entry.daysLeft <= 1 && isFreezable(entry)
+            ? "Si no lo vais a consumir, conviene congelarlo hoy."
+            : `Fecha indicada: ${date}.`;
+          return `
+            <article class="expiration-card ${urgency}">
+              <span class="expiration-clock">${icon("snow")}</span>
+              <div><strong>${escapeHtml(entry.name)}</strong><b>${escapeHtml(expirationLabel(entry.daysLeft))}</b><small>${escapeHtml(freezeHint)}</small></div>
+              <button type="button" data-expiration-consumed="${escapeHtml(entry.id)}">Ya consumido</button>
+            </article>`;
+        }).join("")}
+      </div>
+    </section>`;
 }
 
 function suggestionBlock(title, subtitle, suggestions, kind) {
@@ -307,14 +350,156 @@ function requestFinishShopping() {
 function finishShopping() {
   const now = Date.now();
   const checked = state.items.filter((item) => item.checked);
+  const delicate = checked.filter(isPerishable);
   checked.forEach((item, index) => registerPurchase(state, item, now + index));
   state.items = state.items.filter((item) => !item.checked);
   shoppingMode = false;
   $("#finishDialog").close();
   saveState();
   render();
-  showToast("Compra guardada. Ya puedo aprender de ella");
-  speak("Compra guardada. Ya puedo aprender de ella.");
+  if (delicate.length) {
+    expirationPromptQueue = delicate;
+    showToast("Compra guardada. Revisemos las caducidades");
+    speak("Compra guardada. Ahora te preguntaré las caducidades de los productos más delicados.");
+    showNextExpirationPrompt();
+  } else {
+    showToast("Compra guardada. Ya puedo aprender de ella");
+    speak("Compra guardada. Ya puedo aprender de ella.");
+  }
+}
+
+function localDateValue(date = new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function showNextExpirationPrompt() {
+  currentExpirationPrompt = expirationPromptQueue.shift() || null;
+  if (!currentExpirationPrompt) {
+    checkExpirationAlerts();
+    return;
+  }
+  $("#expirationDateTitle").textContent = `Caducidad de ${currentExpirationPrompt.name}`;
+  $("#expirationDateInput").value = "";
+  $("#expirationDateInput").min = localDateValue();
+  $("#expirationDateDialog").showModal();
+}
+
+async function requestNotificationPermission() {
+  if (!("Notification" in window) || Notification.permission !== "default") return;
+  try {
+    const permission = await Notification.requestPermission();
+    if (permission !== "granted") showToast("Te avisaré al abrir La compra");
+  } catch {
+    showToast("Te avisaré al abrir La compra");
+  }
+}
+
+function saveExpirationDate() {
+  const input = $("#expirationDateInput");
+  if (!input.value) {
+    input.reportValidity();
+    return;
+  }
+  addExpiration(state, currentExpirationPrompt, input.value);
+  saveState();
+  renderIdeas();
+  $("#expirationDateDialog").close();
+  requestNotificationPermission();
+  showNextExpirationPrompt();
+}
+
+function skipExpirationDate() {
+  $("#expirationDateDialog").close();
+  showNextExpirationPrompt();
+}
+
+function markExpirationConsumed(expirationId) {
+  const entry = state.expirations.find((candidate) => candidate.id === expirationId);
+  if (!entry) return;
+  entry.consumedAt = new Date().toISOString();
+  saveState();
+  renderIdeas();
+  showToast(`${entry.name}: marcado como consumido`);
+}
+
+function alertTimingText(entry) {
+  const plural = entry.name.toLocaleLowerCase("es").endsWith("s");
+  if (entry.daysLeft < 0) return plural ? "ya han caducado" : "ya ha caducado";
+  if (entry.daysLeft === 0) return plural ? "caducan hoy" : "caduca hoy";
+  if (entry.daysLeft === 1) return plural ? "caducan mañana" : "caduca mañana";
+  return `${plural ? "caducan" : "caduca"} en ${entry.daysLeft} días`;
+}
+
+function eatenPronoun(entry) {
+  const name = entry.name.toLocaleLowerCase("es");
+  if (name.endsWith("as")) return "las";
+  if (name.endsWith("os") || name.endsWith("es")) return "los";
+  if (["leche", "carne", "fruta", "verdura", "mantequilla", "nata", "mozzarella"].includes(entry.key)) return "la";
+  if (name.endsWith("a")) return "la";
+  return "lo";
+}
+
+async function showExpirationNotification(entry) {
+  if (!("Notification" in window) || Notification.permission !== "granted") return;
+  const freeze = entry.threshold === 1 && isFreezable(entry) ? " Si no, conviene congelarlo hoy." : "";
+  const body = `${entry.name} ${alertTimingText(entry)}. ¿Ya te ${eatenPronoun(entry)} has comido?${freeze}`;
+  try {
+    if ("serviceWorker" in navigator) {
+      const registration = await navigator.serviceWorker.ready;
+      await registration.showNotification("Caducidad próxima", {
+        body,
+        icon: "./icon-192.png",
+        badge: "./icon-192.png",
+        tag: `caducidad-${entry.id}-${entry.threshold}`,
+        data: { url: "./" },
+      });
+    } else {
+      new Notification("Caducidad próxima", { body, icon: "./icon-192.png" });
+    }
+  } catch {
+    // El aviso dentro de la aplicación sigue disponible.
+  }
+}
+
+function showNextExpirationAlert() {
+  currentExpirationAlert = expirationAlertQueue.shift() || null;
+  if (!currentExpirationAlert) return;
+  const timing = alertTimingText(currentExpirationAlert);
+  const freeze = currentExpirationAlert.threshold === 1 && isFreezable(currentExpirationAlert);
+  const question = `¿Ya te ${eatenPronoun(currentExpirationAlert)} has comido?`;
+  $("#expirationAlertTitle").textContent = `${currentExpirationAlert.name} ${timing}. ${question}`;
+  $("#expirationAlertText").textContent = freeze
+    ? "Si todavía lo tenéis, os recomiendo congelarlo hoy para no desperdiciarlo."
+    : "Así dejaré de avisaros si ya está consumido.";
+  $("#expirationAlertDialog").showModal();
+  speak(`${currentExpirationAlert.name} ${timing}. ${question}${freeze ? " Si no, te recomiendo congelarlo hoy." : ""}`);
+  showExpirationNotification(currentExpirationAlert);
+}
+
+function resolveExpirationAlert(consumed) {
+  if (!currentExpirationAlert) return;
+  const entry = state.expirations.find((candidate) => candidate.id === currentExpirationAlert.id);
+  if (entry && consumed) entry.consumedAt = new Date().toISOString();
+  if (entry && !consumed) markExpirationAlerted(state, entry.id, currentExpirationAlert.threshold);
+  const shouldFreeze = !consumed && currentExpirationAlert.threshold === 1 && isFreezable(currentExpirationAlert);
+  $("#expirationAlertDialog").close();
+  saveState();
+  renderIdeas();
+  if (shouldFreeze) {
+    showToast(`Conviene congelar ${currentExpirationAlert.name.toLocaleLowerCase("es")} hoy`);
+    speak(`Te recomiendo congelar ${currentExpirationAlert.name.toLocaleLowerCase("es")} hoy.`);
+  }
+  currentExpirationAlert = null;
+  showNextExpirationAlert();
+}
+
+function checkExpirationAlerts() {
+  if ($$("dialog[open]").length || currentExpirationAlert) return;
+  expirationAlertQueue = getPendingExpirationAlerts(state);
+  showNextExpirationAlert();
 }
 
 function readList() {
@@ -446,6 +631,10 @@ $("#finishConfirm").addEventListener("click", finishShopping);
 $("#finishCancel").addEventListener("click", () => $("#finishDialog").close());
 $("#duplicateYes").addEventListener("click", () => resolveDuplicate(true));
 $("#duplicateNo").addEventListener("click", () => resolveDuplicate(false));
+$("#expirationDateSave").addEventListener("click", saveExpirationDate);
+$("#expirationDateSkip").addEventListener("click", skipExpirationDate);
+$("#expirationConsumedYes").addEventListener("click", () => resolveExpirationAlert(true));
+$("#expirationConsumedNo").addEventListener("click", () => resolveExpirationAlert(false));
 
 document.addEventListener("click", (event) => {
   const nav = event.target.closest("[data-nav]");
@@ -473,6 +662,9 @@ document.addEventListener("click", (event) => {
   }
   const dismiss = event.target.closest("[data-dismiss]");
   if (dismiss) dismissSuggestion(dismiss.dataset.dismiss);
+
+  const consumed = event.target.closest("[data-expiration-consumed]");
+  if (consumed) markExpirationConsumed(consumed.dataset.expirationConsumed);
 });
 
 $("#settingsButton").addEventListener("click", () => $("#settingsDialog").showModal());
@@ -496,5 +688,9 @@ window.addEventListener("beforeinstallprompt", (event) => event.preventDefault()
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => navigator.serviceWorker.register("./service-worker.js").catch(() => {}));
 }
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") checkExpirationAlerts();
+});
 
 render();
+setTimeout(checkExpirationAlerts, 500);

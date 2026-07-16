@@ -1,4 +1,4 @@
-const CACHE = "la-compra-v6";
+const CACHE = "la-compra-v7";
 const ASSETS = ["./", "./index.html", "./styles.css", "./app.mjs", "./core.mjs", "./icon.svg", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png", "./manifest.webmanifest"];
 
 self.addEventListener("install", (event) => {
@@ -21,5 +21,16 @@ self.addEventListener("fetch", (event) => {
         return response;
       })
       .catch(() => caches.match(event.request).then((cached) => cached || caches.match("./index.html")))
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  event.waitUntil(
+    clients.matchAll({ type: "window", includeUncontrolled: true }).then((windows) => {
+      const existing = windows[0];
+      if (existing) return existing.focus();
+      return clients.openWindow(event.notification.data?.url || "./");
+    })
   );
 });

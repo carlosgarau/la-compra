@@ -152,6 +152,22 @@ button:focus-visible, input:focus-visible { outline: 3px solid rgba(40, 95, 67, 
 .suggestion-add { display: flex; align-items: center; justify-content: space-between; width: 100%; margin-top: auto; padding: 9px 11px; border: 0; border-radius: 11px; color: #fff; background: var(--green); font-size: 11px; font-weight: 800; cursor: pointer; }
 .suggestion-add span { font-size: 17px; line-height: .7; }
 .ideas-empty > svg { width: 44px; fill: none; stroke: var(--green); stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
+.expiration-section { margin-bottom: 34px; }
+.expiration-list { display: grid; gap: 10px; }
+.expiration-card { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 13px; padding: 14px; border: 1px solid var(--line); border-radius: 18px; background: rgba(255,253,248,.88); }
+.expiration-card.soon { border-color: #e7c888; background: #fff7e5; }
+.expiration-card.urgent { border-color: #e1a59a; background: #fcece8; }
+.expiration-clock { display: grid; width: 42px; height: 42px; place-items: center; border-radius: 14px; color: var(--green); background: #e5edce; }
+.expiration-card.soon .expiration-clock { color: #8f6724; background: #f6e4b8; }
+.expiration-card.urgent .expiration-clock { color: #a64538; background: #f7d5ce; }
+.expiration-clock svg { width: 22px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.expiration-card strong, .expiration-card b, .expiration-card small { display: block; }
+.expiration-card strong { overflow: hidden; font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
+.expiration-card b { margin-top: 2px; color: var(--green); font-size: 11px; }
+.expiration-card.soon b { color: #8f6724; }
+.expiration-card.urgent b { color: #a64538; }
+.expiration-card small { margin-top: 3px; color: var(--muted); font-size: 9px; line-height: 1.35; }
+.expiration-card button { min-height: 36px; padding: 0 11px; border: 0; border-radius: 11px; color: var(--green); background: #edf0e5; font-size: 10px; font-weight: 800; cursor: pointer; }
 
 .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; margin-bottom: 28px; }
 .stats-grid article { padding: 19px; border: 1px solid var(--line); border-radius: 18px; background: rgba(255,253,248,.8); }
@@ -195,6 +211,12 @@ dialog::backdrop { background: rgba(26,35,29,.42); backdrop-filter: blur(5px); }
 .dialog-actions button { min-height: 48px; border: 0; border-radius: 14px; font-size: 12px; font-weight: 800; cursor: pointer; }
 .dialog-actions .primary { color: #fff; background: var(--green); }
 .dialog-actions .secondary { color: var(--ink); background: #f0eee8; }
+.expiration-icon { color: var(--green); background: #e2edbf; }
+.expiration-warning-icon { color: #a64538; background: #f7d5ce; }
+.expiration-date-field { display: block; margin: -5px 0 20px; text-align: left; }
+.expiration-date-field span { display: block; margin-bottom: 7px; color: var(--muted); font-size: 10px; font-weight: 750; }
+.expiration-date-field input { width: 100%; min-height: 48px; padding: 0 13px; border: 1px solid var(--line); border-radius: 13px; color: var(--ink); background: #fff; font: inherit; }
+.expiration-alert-dialog h2 { font-size: 24px; }
 
 .settings-sheet { position: fixed; top: auto; bottom: 0; max-height: 88vh; margin-bottom: 0; padding: 14px 23px calc(26px + env(safe-area-inset-bottom)); border-radius: 28px 28px 0 0; }
 .sheet-handle { width: 43px; height: 5px; margin: 0 auto 18px; border-radius: 99px; background: #d2d2cc; }
@@ -233,6 +255,8 @@ input[role="switch"]:checked::after { transform: translateX(18px); }
   .suggestion-card strong { font-size: 16px; }
   .bottom-nav { width: calc(100% - 22px); }
   .quantity-control { display: flex; }
+  .expiration-card { grid-template-columns: auto minmax(0, 1fr); }
+  .expiration-card button { grid-column: 1 / -1; }
 }
 
 @media (min-width: 760px) {
