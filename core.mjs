@@ -319,6 +319,7 @@ export function detectVoiceCommand(value) {
   if (
     /^(?:dime )?(?:que )?(?:hay|tenemos|tengo) (?:en )?(?:la|mi) lista(?: de (?:la )?compra)?$/.test(normalized)
     || /^(?:lee|leer|leeme) (?:la|mi) lista(?: de (?:la )?compra)?$/.test(normalized)
+    || ["hay", "que hay"].includes(normalized)
   ) {
     return { type: "read" };
   }
