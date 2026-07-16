@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#f7f4ec" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="La compra" />
+    <meta name="description" content="Tu lista de la compra familiar, con voz, memoria y sugerencias útiles." />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" href="icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+    <link rel="stylesheet" href="styles.css" />
+    <title>La compra</title>
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <button class="brand" type="button" data-nav="list" aria-label="Ir a la lista">
+          <span class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 48 48"><path d="M14 19h20l-2 19H16l-2-19Z"/><path d="M19 21c0-8 10-8 10 0"/></svg>
+          </span>
+          <span><strong>La compra</strong><small id="headerSummary">Tu lista familiar</small></span>
+        </button>
+        <button class="icon-button" id="settingsButton" type="button" aria-label="Ajustes">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.1V21h-4v-.1A1.7 1.7 0 0 0 8.6 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1.1-.4H3v-4h.1A1.7 1.7 0 0 0 4.6 8.6a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.6 1.7 1.7 0 0 0 .4-1.1V3h4v.1A1.7 1.7 0 0 0 15.4 4a1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06A1.7 1.7 0 0 0 19.4 9c.13.36.34.7.6 1 .29.3.68.47 1.1.48h.1v4h-.1A1.7 1.7 0 0 0 19.4 15Z"/></svg>
+        </button>
+      </header>
+
+      <main>
+        <section class="view active" id="listView" data-view="list">
+          <div class="voice-card" id="voiceCard">
+            <div class="voice-copy">
+              <span class="eyebrow">DÍMELO</span>
+              <h1 id="voiceTitle">¿Qué hace falta?</h1>
+              <p id="voiceHint">Toca el micrófono y di “leche, pan y dos kilos de patatas”.</p>
+              <div class="live-transcript" id="liveTranscript" aria-live="polite"></div>
+            </div>
+            <button class="mic-button" id="micButton" type="button" aria-label="Hablar">
+              <span class="mic-ripple"></span>
+              <svg viewBox="0 0 32 32" aria-hidden="true"><rect x="11" y="4" width="10" height="16" rx="5"/><path d="M7 15a9 9 0 0 0 18 0M16 24v5M11 29h10"/></svg>
+            </button>
+          </div>
+
+          <form class="quick-add" id="addForm">
+            <label class="sr-only" for="itemInput">Añadir productos</label>
+            <input id="itemInput" autocomplete="off" enterkeyhint="done" placeholder="Escribe un producto…" />
+            <button type="submit">Añadir</button>
+          </form>
+
+          <section class="list-section">
+            <div class="section-heading">
+              <div>
+                <span class="eyebrow">AHORA</span>
+                <h2>Tu lista <span class="count-badge" id="itemCount">0</span></h2>
+              </div>
+              <button class="shopping-start" id="shoppingStart" type="button">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 5 2 2 3-3M11 6h9M4 12l2 2 3-3M11 13h9M4 19l2 2 3-3M11 20h9"/></svg>
+                Voy a comprar
+              </button>
+            </div>
+            <div id="listContent"></div>
+          </section>
+        </section>
+
+        <section class="view" id="ideasView" data-view="ideas">
+          <div class="page-intro">
+            <span class="eyebrow">UNA AYUDA, NO RUIDO</span>
+            <h1>Ideas para esta compra</h1>
+            <p>Aprenderé de lo que vais pidiendo y de lo que realmente compráis.</p>
+          </div>
+          <div id="ideasContent"></div>
+        </section>
+
+        <section class="view" id="historyView" data-view="history">
+          <div class="page-intro">
+            <span class="eyebrow">MEMORIA DE CASA</span>
+            <h1>Historial</h1>
+            <p>Así puedo notar cuándo hace demasiado que no compráis algo.</p>
+          </div>
+          <div id="historyStats" class="stats-grid"></div>
+          <div id="historyContent"></div>
+        </section>
+      </main>
+
+      <div class="shopping-dock" id="shoppingDock" aria-hidden="true">
+        <div><strong id="shoppingProgress">0 de 0</strong><small>guardados en la cesta</small></div>
+        <button type="button" id="finishShopping">Terminar compra</button>
+      </div>
+
+      <nav class="bottom-nav" aria-label="Navegación principal">
+        <button class="active" type="button" data-nav="list">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13"/><circle cx="3" cy="6" r="1"/><circle cx="3" cy="12" r="1"/><circle cx="3" cy="18" r="1"/></svg>
+          <span>Lista</span>
+        </button>
+        <button type="button" data-nav="ideas">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6M10 22h4M8.5 14.5A7 7 0 1 1 15.5 14.5C14.5 15.3 14 16 14 18h-4c0-2-.5-2.7-1.5-3.5Z"/></svg>
+          <span>Ideas</span><i id="ideaDot"></i>
+        </button>
+        <button type="button" data-nav="history">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></svg>
+          <span>Historial</span>
+        </button>
+      </nav>
+    </div>
+
+    <dialog class="app-dialog" id="duplicateDialog">
+      <div class="dialog-icon duplicate-icon">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 8h11v11H8z"/><path d="M16 8V5H5v11h3"/></svg>
+      </div>
+      <span class="eyebrow">YA ESTABA APUNTADO</span>
+      <h2 id="duplicateTitle">¿Lo compramos dos veces?</h2>
+      <p id="duplicateText"></p>
+      <div class="dialog-actions">
+        <button class="primary" id="duplicateYes" type="button">Sí, comprar más</button>
+        <button class="secondary" id="duplicateNo" type="button">No, dejarlo como está</button>
+      </div>
+    </dialog>
+
+    <dialog class="app-dialog" id="finishDialog">
+      <div class="dialog-icon finish-icon">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 13 4 4L19 7"/></svg>
+      </div>
+      <span class="eyebrow">FIN DE LA COMPRA</span>
+      <h2>¿Guardamos lo que has comprado?</h2>
+      <p id="finishText"></p>
+      <div class="dialog-actions">
+        <button class="primary" id="finishConfirm" type="button">Guardar compra</button>
+        <button class="secondary" id="finishCancel" type="button">Seguir comprando</button>
+      </div>
+    </dialog>
+
+    <dialog class="settings-sheet" id="settingsDialog">
+      <div class="sheet-handle"></div>
+      <div class="sheet-heading">
+        <div><span class="eyebrow">PREFERENCIAS</span><h2>Ajustes</h2></div>
+        <button class="icon-button" id="settingsClose" type="button" aria-label="Cerrar">×</button>
+      </div>
+      <label class="setting-row">
+        <span><strong>Confirmaciones por voz</strong><small>La app te responde al añadir y ante repetidos.</small></span>
+        <input id="speakToggle" type="checkbox" role="switch" />
+      </label>
+      <div class="settings-group">
+        <strong>Tus datos</strong>
+        <p>Se guardan únicamente en este dispositivo. Exporta una copia si vas a cambiar de móvil.</p>
+        <div class="settings-actions">
+          <button id="exportButton" type="button">Exportar copia</button>
+          <label class="import-button">Importar copia<input id="importInput" type="file" accept="application/json" /></label>
+        </div>
+      </div>
+      <button class="danger-button" id="clearButton" type="button">Borrar lista e historial</button>
+    </dialog>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    <script type="module" src="app.mjs"></script>
+  </body>
+</html>
