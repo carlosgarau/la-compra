@@ -47,6 +47,9 @@ test("reconoce comandos de compra", () => {
   assert.equal(detectVoiceCommand("Voy a hacer la compra").type, "shopping");
   assert.equal(detectVoiceCommand("leer la lista").type, "read");
   assert.equal(detectVoiceCommand("¿Qué hay en la lista de la compra?").type, "read");
+  assert.equal(detectVoiceCommand("Hay en la lista de la compra").type, "read");
+  assert.equal(detectVoiceCommand("Dime qué hay en mi lista de la compra").type, "read");
+  assert.equal(detectVoiceCommand("Qué tengo en la lista de la compra").type, "read");
   assert.equal(detectVoiceCommand("Léeme la lista").type, "read");
   assert.equal(detectVoiceCommand("He terminado la compra").type, "finish");
   assert.equal(detectVoiceCommand("Hazme la lista final que voy a comprar").type, "shopping");

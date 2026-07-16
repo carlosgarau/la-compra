@@ -1,4 +1,4 @@
-const CACHE = "la-compra-v8";
+const CACHE = "la-compra-v9";
 const ASSETS = ["./", "./index.html", "./styles.css", "./app.mjs", "./core.mjs", "./icon.svg", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png", "./manifest.webmanifest"];
 
 self.addEventListener("install", (event) => {

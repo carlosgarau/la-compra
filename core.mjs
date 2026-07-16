@@ -316,7 +316,10 @@ export function detectVoiceCommand(value) {
   if (/^(he |hemos )?(terminado|acabado)( la compra)?$/.test(normalized) || /^(terminar|finalizar|fin de) compra$/.test(normalized)) {
     return { type: "finish" };
   }
-  if (/^que (hay|tenemos) (en )?(la|mi) lista/.test(normalized) || ["leer la lista", "leeme la lista", "dime que hay en la lista"].includes(normalized)) {
+  if (
+    /^(?:dime )?(?:que )?(?:hay|tenemos|tengo) (?:en )?(?:la|mi) lista(?: de (?:la )?compra)?$/.test(normalized)
+    || /^(?:lee|leer|leeme) (?:la|mi) lista(?: de (?:la )?compra)?$/.test(normalized)
+  ) {
     return { type: "read" };
   }
   if (/^(abre|muestra|muestrame|ensena|ensename) (la|mi) lista( de la compra)?$/.test(normalized)) {
