@@ -316,10 +316,13 @@ export function detectVoiceCommand(value) {
   if (/^(he |hemos )?(terminado|acabado)( la compra)?$/.test(normalized) || /^(terminar|finalizar|fin de) compra$/.test(normalized)) {
     return { type: "finish" };
   }
+  const mentionsList = /\b(?:la|mi) lista(?: de (?:la )?compra)?\b/.test(normalized);
+  const asksForListContents = /^(?:dime )?(?:que |cuales? )?(?:(?:ingredientes|productos|cosas) )?(?:hay|tengo|tenemos)\b/.test(normalized)
+    || /^(?:que|cuales?) (?:son )?(?:los |las )?(?:ingredientes|productos|cosas) (?:de|en)\b/.test(normalized);
   if (
-    /^(?:dime )?(?:que )?(?:hay|tenemos|tengo) (?:en )?(?:la|mi) lista(?: de (?:la )?compra)?$/.test(normalized)
+    (mentionsList && asksForListContents)
     || /^(?:lee|leer|leeme) (?:la|mi) lista(?: de (?:la )?compra)?$/.test(normalized)
-    || ["hay", "que hay"].includes(normalized)
+    || ["hay", "que hay", "que ingredientes hay", "ingredientes hay", "que productos hay", "productos hay"].includes(normalized)
   ) {
     return { type: "read" };
   }

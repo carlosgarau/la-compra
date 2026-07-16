@@ -18,7 +18,7 @@ import {
   registerPurchase,
   registerRequest,
   shoppingSummary,
-} from "./core.mjs?v=10";
+} from "./core.mjs?v=11";
 
 const STORAGE_KEY = "la-compra-state-v1";
 const ICONS = {
