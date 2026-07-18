@@ -1,5 +1,12 @@
 # La compra
 
+## Instalar la lista familiar en iPhone
+
+1. Abrir el enlace familiar completo en Safari.
+2. Comprobar que la cabecera indica `Compartida`.
+3. Usar `Compartir` > `Añadir a pantalla de inicio`.
+4. Abrir el nuevo icono. La app recuperará la familia mediante una cookie segura del propio sitio, aunque iOS mantenga separado el almacenamiento de Safari y el de la app instalada.
+
 Una lista de la compra familiar pensada para usarla con una mano y por voz.
 
 ## Qué hace

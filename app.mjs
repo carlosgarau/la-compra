@@ -18,14 +18,18 @@ import {
   registerPurchase,
   registerRequest,
   shoppingSummary,
-} from "./core.mjs?v=13";
+} from "./core.mjs?v=14";
 import {
   createFamilyId,
   createFamilySync,
   createSharedListSync,
   DEVICE_STORAGE_KEY,
+  expireFamilyCookie,
+  familyCookiePathFromUrl,
+  familyIdFromCookie,
   familyIdFromUrl,
   FAMILY_STORAGE_KEY,
+  makeFamilyCookie,
   makeFamilyShareUrl,
   makeSharedListUrl,
   mergeFamilyStates,
@@ -33,7 +37,7 @@ import {
   normalizeFamilyId,
   sharedStateFrom,
   sharedListIdFromUrl,
-} from "./family-sync.mjs?v=13";
+} from "./family-sync.mjs?v=14";
 
 const STORAGE_KEY = "la-compra-state-v1";
 const DATABASE_URL = "https://la-compra-familiar-default-rtdb.europe-west1.firebasedatabase.app";
@@ -93,17 +97,44 @@ function getDeviceId() {
   return id;
 }
 
+function storeFamilyAccess(value) {
+  const id = normalizeFamilyId(value);
+  if (!id) return "";
+  try {
+    localStorage.setItem(FAMILY_STORAGE_KEY, id);
+  } catch {}
+  try {
+    document.cookie = makeFamilyCookie(id, familyCookiePathFromUrl(window.location.href));
+  } catch {}
+  return id;
+}
+
+function clearFamilyAccess() {
+  try {
+    localStorage.removeItem(FAMILY_STORAGE_KEY);
+  } catch {}
+  try {
+    document.cookie = expireFamilyCookie(familyCookiePathFromUrl(window.location.href));
+  } catch {}
+}
+
 function rememberFamilyId() {
   const url = new URL(window.location.href);
   const incoming = familyIdFromUrl(url);
   if (incoming) {
-    localStorage.setItem(FAMILY_STORAGE_KEY, incoming);
+    storeFamilyAccess(incoming);
     url.searchParams.delete("familia");
     url.searchParams.delete("family");
     window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
     return incoming;
   }
-  return normalizeFamilyId(localStorage.getItem(FAMILY_STORAGE_KEY));
+  let stored = "";
+  try {
+    stored = normalizeFamilyId(localStorage.getItem(FAMILY_STORAGE_KEY));
+  } catch {}
+  const remembered = stored || familyIdFromCookie(document.cookie);
+  if (remembered) storeFamilyAccess(remembered);
+  return remembered;
 }
 
 function saveState({ sync = true } = {}) {
@@ -344,10 +375,11 @@ async function initializeFamilySharing() {
 async function shareFamilyLink() {
   if (!familyId) {
     familyId = createFamilyId();
-    localStorage.setItem(FAMILY_STORAGE_KEY, familyId);
+    storeFamilyAccess(familyId);
     initializeFamilySharing().catch(() => setFamilyStatus("offline"));
     familySync?.writeNow(sharedStateFrom(state)).catch(() => {});
   }
+  storeFamilyAccess(familyId);
   const url = makeFamilyShareUrl(window.location.href, familyId);
   const shareData = {
     title: "Nuestra lista de la compra",
@@ -373,7 +405,7 @@ function disconnectFamily() {
   familySync?.stop();
   familySync = null;
   familyId = "";
-  localStorage.removeItem(FAMILY_STORAGE_KEY);
+  clearFamilyAccess();
   setFamilyStatus("local");
   showToast("Este móvil ya no comparte la lista");
 }
@@ -1235,7 +1267,7 @@ $("#clearButton").addEventListener("click", () => {
 
 window.addEventListener("beforeinstallprompt", (event) => event.preventDefault());
 if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => navigator.serviceWorker.register("./service-worker.js?v=13").catch(() => {}));
+  window.addEventListener("load", () => navigator.serviceWorker.register("./service-worker.js?v=14").catch(() => {}));
 }
 function refreshSharedData() {
   familySync?.refresh();

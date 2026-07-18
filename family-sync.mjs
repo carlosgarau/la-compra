@@ -1,6 +1,8 @@
 export const FAMILY_STORAGE_KEY = "la-compra-family-v1";
 export const DEVICE_STORAGE_KEY = "la-compra-device-v1";
 export const FAMILY_ID_PATTERN = /^[A-Za-z0-9_-]{43}$/;
+export const FAMILY_COOKIE_NAME = FAMILY_STORAGE_KEY;
+export const FAMILY_COOKIE_MAX_AGE = 31_536_000;
 
 export function normalizeFamilyId(value) {
   const candidate = String(value || "").trim();
@@ -18,6 +20,35 @@ export function createFamilyId(cryptoImpl = globalThis.crypto) {
 export function familyIdFromUrl(value) {
   const url = value instanceof URL ? value : new URL(String(value), "https://example.invalid/");
   return normalizeFamilyId(url.searchParams.get("familia") || url.searchParams.get("family"));
+}
+
+export function familyIdFromCookie(value) {
+  const cookies = String(value || "").split(";");
+  for (const cookie of cookies) {
+    const separator = cookie.indexOf("=");
+    if (separator < 0 || cookie.slice(0, separator).trim() !== FAMILY_COOKIE_NAME) continue;
+    try {
+      return normalizeFamilyId(decodeURIComponent(cookie.slice(separator + 1).trim()));
+    } catch {
+      return "";
+    }
+  }
+  return "";
+}
+
+export function familyCookiePathFromUrl(value) {
+  const url = value instanceof URL ? value : new URL(String(value), "https://example.invalid/");
+  return new URL(".", url).pathname;
+}
+
+export function makeFamilyCookie(familyId, path = "/") {
+  const id = normalizeFamilyId(familyId);
+  if (!id) throw new Error("El enlace familiar no es válido");
+  return `${FAMILY_COOKIE_NAME}=${encodeURIComponent(id)}; Max-Age=${FAMILY_COOKIE_MAX_AGE}; Path=${path}; SameSite=Strict; Secure`;
+}
+
+export function expireFamilyCookie(path = "/") {
+  return `${FAMILY_COOKIE_NAME}=; Max-Age=0; Path=${path}; SameSite=Strict; Secure`;
 }
 
 export function sharedListIdFromUrl(value) {

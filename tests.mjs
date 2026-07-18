@@ -25,7 +25,13 @@ import {
   createFamilyId,
   createFamilySync,
   createSharedListSync,
+  expireFamilyCookie,
+  familyCookiePathFromUrl,
+  familyIdFromCookie,
   familyIdFromUrl,
+  FAMILY_COOKIE_MAX_AGE,
+  FAMILY_COOKIE_NAME,
+  makeFamilyCookie,
   makeFamilyShareUrl,
   makeSharedListUrl,
   mergeFamilyStates,
@@ -145,6 +151,28 @@ test("crea y reconoce enlaces familiares privados", () => {
   const url = makeFamilyShareUrl("https://example.com/la-compra/?command=pan#lista", familyId);
   assert.equal(familyIdFromUrl(url), familyId);
   assert.equal(new URL(url).searchParams.has("command"), false);
+});
+
+test("traspasa la familia de Safari a la app instalada mediante cookie", () => {
+  const familyId = "f".repeat(43);
+  const sharedUrl = makeFamilyShareUrl("https://example.com/la-compra/", familyId);
+  const cookiePath = familyCookiePathFromUrl(sharedUrl);
+  const setCookie = makeFamilyCookie(familyId, cookiePath);
+  const cookieHeader = setCookie.split(";")[0];
+
+  assert.equal(cookiePath, "/la-compra/");
+  assert.equal(familyIdFromUrl(sharedUrl), familyId);
+  assert.equal(familyIdFromCookie(cookieHeader), familyId);
+  assert.match(setCookie, new RegExp(`^${FAMILY_COOKIE_NAME}=${familyId};`));
+  assert.match(setCookie, new RegExp(`Max-Age=${FAMILY_COOKIE_MAX_AGE}`));
+  assert.match(setCookie, /Path=\/la-compra\/; SameSite=Strict; Secure$/);
+  assert.match(expireFamilyCookie(cookiePath), /Max-Age=0; Path=\/la-compra\//);
+});
+
+test("ignora cookies familiares manipuladas o incompletas", () => {
+  assert.equal(familyIdFromCookie(`${FAMILY_COOKIE_NAME}=demasiado-corta`), "");
+  assert.equal(familyIdFromCookie(`otra=1; ${FAMILY_COOKIE_NAME}=${"%".repeat(43)}`), "");
+  assert.equal(familyIdFromCookie("otra=1"), "");
 });
 
 test("crea un enlace aislado para una sola lista especial", () => {
