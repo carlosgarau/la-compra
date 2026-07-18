@@ -28,6 +28,7 @@ import {
   familyIdFromUrl,
   makeFamilyShareUrl,
   makeSharedListUrl,
+  mergeFamilyStates,
   mergeSharedState,
   sharedListIdFromUrl,
   sharedStateFrom,
@@ -175,6 +176,37 @@ test("mantiene las preferencias de voz fuera de la lista compartida", () => {
   const shared = sharedStateFrom(local);
   assert.equal("settings" in shared, false);
   assert.equal(mergeSharedState(shared, local.settings).settings.speak, false);
+});
+
+test("recupera una lista local antigua cuando la lista familiar está vacía", () => {
+  const local = createInitialState();
+  local.items.push({ id: "tomate", key: "tomate", name: "Tomate", quantity: 1, checked: false });
+  local.expirations.push({ id: "carne", key: "carne", name: "Carne", expiresOn: "2026-07-21" });
+  const merged = mergeFamilyStates(local, { version: 1 });
+  assert.equal(merged.items[0].name, "Tomate");
+  assert.equal(merged.expirations[0].name, "Carne");
+  assert.equal("settings" in merged, false);
+});
+
+test("une dos listas existentes sin borrar productos ni listas especiales", () => {
+  const local = createInitialState();
+  local.items.push({ id: "pan", key: "pan", name: "Pan", quantity: 1, checked: false });
+  local.specialLists.push({
+    id: "navidad",
+    name: "Navidad",
+    items: [{ id: "uvas", key: "uva", name: "Uvas", quantity: 1, checked: false }],
+  });
+  const remote = createInitialState();
+  remote.items.push({ id: "leche", key: "leche", name: "Leche", quantity: 1, checked: false });
+  remote.specialLists.push({
+    id: "navidad",
+    name: "Cena de Navidad",
+    items: [{ id: "turron", key: "turron", name: "Turrón", quantity: 1, checked: false }],
+  });
+  const merged = mergeFamilyStates(local, remote);
+  assert.deepEqual(merged.items.map((item) => item.name).sort(), ["Leche", "Pan"]);
+  assert.equal(merged.specialLists[0].name, "Cena de Navidad");
+  assert.deepEqual(merged.specialLists[0].items.map((item) => item.name).sort(), ["Turrón", "Uvas"]);
 });
 
 test("sube la primera lista y descarga la misma lista en otro móvil", async () => {

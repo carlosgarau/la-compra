@@ -57,6 +57,87 @@ export function mergeSharedState(shared, localSettings = {}) {
   };
 }
 
+function mergeUniqueEntries(localEntries, remoteEntries, identity) {
+  const merged = new Map();
+  [...(Array.isArray(localEntries) ? localEntries : []), ...(Array.isArray(remoteEntries) ? remoteEntries : [])]
+    .forEach((entry, index) => {
+      if (!entry || typeof entry !== "object") return;
+      const id = identity(entry, index);
+      merged.set(id, { ...(merged.get(id) || {}), ...entry });
+    });
+  return [...merged.values()];
+}
+
+function mergeCatalog(localCatalog, remoteCatalog) {
+  const local = localCatalog && typeof localCatalog === "object" ? localCatalog : {};
+  const remote = remoteCatalog && typeof remoteCatalog === "object" ? remoteCatalog : {};
+  const merged = {};
+  new Set([...Object.keys(local), ...Object.keys(remote)]).forEach((key) => {
+    const localEntry = local[key] || {};
+    const remoteEntry = remote[key] || {};
+    merged[key] = {
+      ...localEntry,
+      ...remoteEntry,
+      requestDates: [...new Set([...(localEntry.requestDates || []), ...(remoteEntry.requestDates || [])])].sort().slice(-20),
+      purchaseDates: [...new Set([...(localEntry.purchaseDates || []), ...(remoteEntry.purchaseDates || [])])].sort().slice(-20),
+    };
+  });
+  return merged;
+}
+
+function mergeDismissals(localDismissals, remoteDismissals) {
+  const local = localDismissals && typeof localDismissals === "object" ? localDismissals : {};
+  const remote = remoteDismissals && typeof remoteDismissals === "object" ? remoteDismissals : {};
+  const merged = {};
+  new Set([...Object.keys(local), ...Object.keys(remote)]).forEach((month) => {
+    merged[month] = [...new Set([...(local[month] || []), ...(remote[month] || [])])];
+  });
+  return merged;
+}
+
+function mergeSpecialLists(localLists, remoteLists) {
+  const merged = new Map();
+  [...(Array.isArray(localLists) ? localLists : []), ...(Array.isArray(remoteLists) ? remoteLists : [])]
+    .forEach((list, index) => {
+      if (!list || typeof list !== "object") return;
+      const id = String(list.id || `lista-${index}`);
+      const previous = merged.get(id) || {};
+      merged.set(id, {
+        ...previous,
+        ...list,
+        id,
+        items: mergeUniqueEntries(previous.items, list.items, (item, itemIndex) => (
+          String(item.id || `${item.key || item.name || "producto"}-${itemIndex}`)
+        )),
+      });
+    });
+  return [...merged.values()];
+}
+
+export function mergeFamilyStates(localState, remoteState) {
+  const localSource = localState && typeof localState === "object" ? localState : {};
+  const remoteSource = remoteState && typeof remoteState === "object" ? remoteState : {};
+  const { settings: _localSettings, ...local } = localSource;
+  const { settings: _remoteSettings, ...remote } = remoteSource;
+  return {
+    ...local,
+    ...remote,
+    version: Math.max(Number(local.version) || 1, Number(remote.version) || 1),
+    items: mergeUniqueEntries(local.items, remote.items, (item, index) => (
+      String(item.id || `${item.key || item.name || "producto"}-${index}`)
+    )),
+    catalog: mergeCatalog(local.catalog, remote.catalog),
+    purchases: mergeUniqueEntries(local.purchases, remote.purchases, (entry, index) => (
+      String(entry.id || `${entry.key || entry.name || "compra"}-${entry.purchasedAt || index}`)
+    )).sort((a, b) => String(b.purchasedAt || "").localeCompare(String(a.purchasedAt || ""))).slice(0, 500),
+    expirations: mergeUniqueEntries(local.expirations, remote.expirations, (entry, index) => (
+      String(entry.id || `${entry.key || entry.name || "caducidad"}-${entry.expiresOn || index}`)
+    )).slice(0, 300),
+    specialLists: mergeSpecialLists(local.specialLists, remote.specialLists),
+    dismissedSuggestions: mergeDismissals(local.dismissedSuggestions, remote.dismissedSuggestions),
+  };
+}
+
 export function createFamilySync({
   databaseUrl,
   familyId,

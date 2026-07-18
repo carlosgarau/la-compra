@@ -18,7 +18,7 @@ import {
   registerPurchase,
   registerRequest,
   shoppingSummary,
-} from "./core.mjs?v=12";
+} from "./core.mjs?v=13";
 import {
   createFamilyId,
   createFamilySync,
@@ -28,11 +28,12 @@ import {
   FAMILY_STORAGE_KEY,
   makeFamilyShareUrl,
   makeSharedListUrl,
+  mergeFamilyStates,
   mergeSharedState,
   normalizeFamilyId,
   sharedStateFrom,
   sharedListIdFromUrl,
-} from "./family-sync.mjs?v=12";
+} from "./family-sync.mjs?v=13";
 
 const STORAGE_KEY = "la-compra-state-v1";
 const DATABASE_URL = "https://la-compra-familiar-default-rtdb.europe-west1.firebasedatabase.app";
@@ -294,15 +295,31 @@ async function initializeStandaloneListSharing() {
   await sync.start(sharedListPayload(standaloneList));
 }
 
+function hasFamilyData(candidate) {
+  return ["items", "purchases", "expirations", "specialLists"]
+    .some((key) => Array.isArray(candidate?.[key]) && candidate[key].length > 0)
+    || Object.keys(candidate?.catalog || {}).length > 0
+    || Object.keys(candidate?.dismissedSuggestions || {}).length > 0;
+}
+
 function applyRemoteFamilyState(remoteState, { initial = false } = {}) {
-  state = hydrateState(mergeSharedState(remoteState, state.settings));
+  const localSettings = state.settings;
+  const localSharedState = sharedStateFrom(state);
+  const shouldRecoverLocalData = initial && hasFamilyData(localSharedState);
+  const nextSharedState = shouldRecoverLocalData
+    ? mergeFamilyStates(localSharedState, remoteState)
+    : remoteState;
+  const recoveredLocalData = shouldRecoverLocalData && JSON.stringify(nextSharedState) !== JSON.stringify(remoteState);
+  state = hydrateState(mergeSharedState(nextSharedState, localSettings));
   if (activeListId !== "main" && activeListId !== "standalone" && !specialListById(activeListId)) {
     activeListId = "main";
   }
   saveState({ sync: false });
+  if (recoveredLocalData) familySync?.schedule(sharedStateFrom(state), 0);
   initializeAllSharedListSyncs();
   render();
-  if (!initial) showToast("Lista actualizada desde el otro móvil");
+  if (recoveredLocalData) showToast("He unido la lista antigua con la familiar");
+  else if (!initial) showToast("Lista actualizada desde el otro móvil");
 }
 
 async function initializeFamilySharing() {
@@ -1218,7 +1235,7 @@ $("#clearButton").addEventListener("click", () => {
 
 window.addEventListener("beforeinstallprompt", (event) => event.preventDefault());
 if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => navigator.serviceWorker.register("./service-worker.js?v=12").catch(() => {}));
+  window.addEventListener("load", () => navigator.serviceWorker.register("./service-worker.js?v=13").catch(() => {}));
 }
 function refreshSharedData() {
   familySync?.refresh();
