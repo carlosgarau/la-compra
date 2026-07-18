@@ -9,6 +9,7 @@ import {
   getPendingExpirationAlerts,
   getSuggestions,
   groupItems,
+  hydrateState,
   isFreezable,
   isPerishable,
   markExpirationAlerted,
@@ -20,6 +21,17 @@ import {
   registerPurchase,
   registerRequest,
 } from "./core.mjs";
+import {
+  createFamilyId,
+  createFamilySync,
+  createSharedListSync,
+  familyIdFromUrl,
+  makeFamilyShareUrl,
+  makeSharedListUrl,
+  mergeSharedState,
+  sharedListIdFromUrl,
+  sharedStateFrom,
+} from "./family-sync.mjs";
 
 test("separa una frase con varios productos", () => {
   const entries = parseSpokenList("Añade leche, pan y dos kilos de patatas a la lista de la compra");
@@ -40,6 +52,8 @@ test("clasifica productos en familias", () => {
   assert.equal(categoryFor("leche entera"), "Lácteos y huevos");
   assert.equal(categoryFor("pañales talla 5"), "Bebés y niños");
   assert.equal(categoryFor("tomates cherry"), "Fruta y verdura");
+  assert.equal(categoryFor("aguacate"), "Fruta y verdura");
+  assert.equal(categoryFor("turrón"), "Despensa");
   assert.equal(groupItems([{ category: "Bebidas" }, { category: "Despensa" }]).length, 2);
 });
 
@@ -116,4 +130,99 @@ test("avisa a tres días y vuelve a avisar a un día", () => {
   assert.equal(getPendingExpirationAlerts(state, firstCheck).length, 0);
   const secondCheck = new Date(2026, 6, 18, 10).getTime();
   assert.equal(getPendingExpirationAlerts(state, secondCheck)[0].threshold, 1);
+});
+
+test("crea y reconoce enlaces familiares privados", () => {
+  const fakeCrypto = {
+    getRandomValues(bytes) {
+      bytes.forEach((_, index) => { bytes[index] = index + 1; });
+      return bytes;
+    },
+  };
+  const familyId = createFamilyId(fakeCrypto);
+  assert.equal(familyId.length, 43);
+  const url = makeFamilyShareUrl("https://example.com/la-compra/?command=pan#lista", familyId);
+  assert.equal(familyIdFromUrl(url), familyId);
+  assert.equal(new URL(url).searchParams.has("command"), false);
+});
+
+test("crea un enlace aislado para una sola lista especial", () => {
+  const listId = "N".repeat(43);
+  const url = makeSharedListUrl("https://example.com/la-compra/?familia=secreto&command=pan", listId);
+  assert.equal(sharedListIdFromUrl(url), listId);
+  assert.equal(new URL(url).searchParams.has("familia"), false);
+  assert.equal(new URL(url).searchParams.has("command"), false);
+});
+
+test("conserva listas especiales, nombre, artículos y enlace al hidratar", () => {
+  const shareId = "s".repeat(43);
+  const hydrated = hydrateState({
+    specialLists: [{
+      id: "navidad",
+      name: "navidad",
+      shareId,
+      items: [{ id: "1", key: "turron", name: "Turrón", quantity: 1, checked: false }],
+    }],
+  });
+  assert.equal(hydrated.specialLists[0].name, "Navidad");
+  assert.equal(hydrated.specialLists[0].shareId, shareId);
+  assert.equal(hydrated.specialLists[0].items[0].key, "turron");
+});
+
+test("mantiene las preferencias de voz fuera de la lista compartida", () => {
+  const local = createInitialState();
+  local.settings.speak = false;
+  const shared = sharedStateFrom(local);
+  assert.equal("settings" in shared, false);
+  assert.equal(mergeSharedState(shared, local.settings).settings.speak, false);
+});
+
+test("sube la primera lista y descarga la misma lista en otro móvil", async () => {
+  let remote = null;
+  const fetchImpl = async (_url, options = {}) => {
+    if ((options.method || "GET") === "GET") {
+      return { ok: true, status: 200, json: async () => remote };
+    }
+    const body = JSON.parse(options.body);
+    remote = { ...body, updatedAt: 1234 };
+    return { ok: true, status: 200, json: async () => remote };
+  };
+  const familyId = "a".repeat(43);
+  const local = createInitialState();
+  local.items.push({ id: "1", key: "tomate", name: "Tomate", quantity: 1, checked: false });
+
+  const first = createFamilySync({
+    databaseUrl: "https://example.test",
+    familyId,
+    deviceId: "movil-1",
+    fetchImpl,
+    EventSourceImpl: null,
+  });
+  await first.start(local);
+  assert.equal(remote.state.items[0].key, "tomate");
+  assert.equal("settings" in remote.state, false);
+
+  let downloaded = null;
+  const second = createFamilySync({
+    databaseUrl: "https://example.test",
+    familyId,
+    deviceId: "movil-2",
+    fetchImpl,
+    EventSourceImpl: null,
+    onRemoteState: (next) => { downloaded = next; },
+  });
+  await second.start(createInitialState());
+  assert.equal(downloaded.items[0].name, "Tomate");
+});
+
+test("usa una colección independiente para una lista especial compartida", () => {
+  const sync = createSharedListSync({
+    databaseUrl: "https://example.test/",
+    listId: "x".repeat(43),
+    deviceId: "movil-1",
+    fetchImpl: async () => ({ ok: true, status: 200, json: async () => null }),
+    EventSourceImpl: null,
+  });
+  assert.equal(sync.endpoint, `https://example.test/sharedLists/${"x".repeat(43)}.json`);
+  sync.stop();
 });

@@ -18,9 +18,24 @@ import {
   registerPurchase,
   registerRequest,
   shoppingSummary,
-} from "./core.mjs?v=11";
+} from "./core.mjs?v=12";
+import {
+  createFamilyId,
+  createFamilySync,
+  createSharedListSync,
+  DEVICE_STORAGE_KEY,
+  familyIdFromUrl,
+  FAMILY_STORAGE_KEY,
+  makeFamilyShareUrl,
+  makeSharedListUrl,
+  mergeSharedState,
+  normalizeFamilyId,
+  sharedStateFrom,
+  sharedListIdFromUrl,
+} from "./family-sync.mjs?v=12";
 
 const STORAGE_KEY = "la-compra-state-v1";
+const DATABASE_URL = "https://la-compra-familiar-default-rtdb.europe-west1.firebasedatabase.app";
 const ICONS = {
   leaf: '<path d="M19 4C11 4 5 8 5 14c0 3 2 5 5 5 6 0 9-7 9-15Z"/><path d="M5 20c2-5 5-8 10-11"/>',
   fish: '<path d="M4 12c3-5 8-6 13-3l3-3v12l-3-3c-5 3-10 2-13-3Z"/><circle cx="13.5" cy="10.5" r=".7"/>',
@@ -40,6 +55,15 @@ const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
 
 let state = loadState();
+let standaloneListId = sharedListIdFromUrl(window.location.href);
+let familyId = standaloneListId ? "" : rememberFamilyId();
+let familySync = null;
+let familyStatus = familyId ? "connecting" : "local";
+let deviceId = getDeviceId();
+let activeListId = standaloneListId ? "standalone" : "main";
+let standaloneList = null;
+let sharedListSyncs = new Map();
+let editingSpecialListId = "";
 let activeView = "list";
 let shoppingMode = false;
 let duplicateQueue = [];
@@ -59,8 +83,96 @@ function loadState() {
   }
 }
 
-function saveState() {
+function getDeviceId() {
+  let id = localStorage.getItem(DEVICE_STORAGE_KEY);
+  if (!id) {
+    id = globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    localStorage.setItem(DEVICE_STORAGE_KEY, id);
+  }
+  return id;
+}
+
+function rememberFamilyId() {
+  const url = new URL(window.location.href);
+  const incoming = familyIdFromUrl(url);
+  if (incoming) {
+    localStorage.setItem(FAMILY_STORAGE_KEY, incoming);
+    url.searchParams.delete("familia");
+    url.searchParams.delete("family");
+    window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
+    return incoming;
+  }
+  return normalizeFamilyId(localStorage.getItem(FAMILY_STORAGE_KEY));
+}
+
+function saveState({ sync = true } = {}) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  if (sync && familySync) familySync.schedule(sharedStateFrom(state));
+}
+
+function cleanListName(value, fallback = "Lista especial") {
+  return String(value || "").trim().replace(/\s+/g, " ").slice(0, 50) || fallback;
+}
+
+function normalizeSharedList(value, fallbackName = "Lista compartida") {
+  return {
+    name: cleanListName(value?.name, fallbackName),
+    items: Array.isArray(value?.items) ? value.items : [],
+  };
+}
+
+function specialListById(listId) {
+  return state.specialLists.find((list) => list.id === listId) || null;
+}
+
+function listRecordById(listId = activeListId) {
+  if (listId === "standalone") return standaloneList;
+  if (listId === "main") return { id: "main", name: "Compra habitual", items: state.items };
+  return specialListById(listId);
+}
+
+function activeListRecord() {
+  return listRecordById(activeListId);
+}
+
+function listItems(listId = activeListId) {
+  return listRecordById(listId)?.items || [];
+}
+
+function replaceListItems(listId, items) {
+  if (listId === "main") state.items = items;
+  else if (listId === "standalone" && standaloneList) standaloneList.items = items;
+  else {
+    const list = specialListById(listId);
+    if (list) list.items = items;
+  }
+}
+
+function sharedListPayload(list) {
+  return {
+    version: 1,
+    name: cleanListName(list?.name),
+    items: Array.isArray(list?.items) ? list.items : [],
+  };
+}
+
+function sharedSyncEntry(listId) {
+  return sharedListSyncs.get(listId);
+}
+
+function persistList(listId = activeListId) {
+  if (listId === "standalone") {
+    const entry = sharedSyncEntry("standalone");
+    if (standaloneList && entry) entry.sync.schedule(sharedListPayload(standaloneList));
+    return;
+  }
+
+  saveState();
+  if (listId !== "main") {
+    const list = specialListById(listId);
+    const entry = sharedSyncEntry(listId);
+    if (list && entry) entry.sync.schedule(sharedListPayload(list));
+  }
 }
 
 function escapeHtml(value) {
@@ -93,45 +205,329 @@ function showToast(message) {
   toastTimer = setTimeout(() => toast.classList.remove("visible"), 2600);
 }
 
+function renderFamilySharing() {
+  const status = $("#familyStatus");
+  const shareButton = $("#familyShareButton");
+  const disconnectButton = $("#familyDisconnectButton");
+  const badge = $("#familyBadge");
+  if (!status || !shareButton || !disconnectButton || !badge) return;
+
+  const copy = {
+    local: "Esta copia solo está en este móvil.",
+    connecting: "Conectando con vuestra lista familiar…",
+    synced: "Compartida y sincronizada entre los dos móviles.",
+    offline: "Sin conexión. Los cambios se sincronizarán cuando vuelva Internet.",
+  };
+  status.textContent = copy[familyStatus] || copy.local;
+  shareButton.textContent = familyId ? "Compartir enlace familiar" : "Crear lista compartida";
+  disconnectButton.hidden = !familyId;
+  badge.hidden = !familyId;
+  badge.className = `family-badge ${familyStatus}`;
+  badge.textContent = familyStatus === "synced" ? "Compartida" : familyStatus === "offline" ? "Sin conexión" : "Conectando";
+}
+
+function setFamilyStatus(status) {
+  familyStatus = status;
+  renderFamilySharing();
+}
+
+async function initializeSpecialListSync(list) {
+  const shareId = normalizeFamilyId(list?.shareId);
+  if (!list?.id || !shareId) return;
+  const currentEntry = sharedSyncEntry(list.id);
+  if (currentEntry?.shareId === shareId) return;
+  currentEntry?.sync.stop();
+
+  const sync = createSharedListSync({
+    databaseUrl: DATABASE_URL,
+    listId: shareId,
+    deviceId,
+    onRemoteState: (remoteState, { initial = false } = {}) => {
+      const currentList = specialListById(list.id);
+      if (!currentList || normalizeFamilyId(currentList.shareId) !== shareId) return;
+      const remote = normalizeSharedList(remoteState, currentList.name);
+      currentList.name = remote.name;
+      currentList.items = remote.items;
+      saveState();
+      render();
+      if (!initial) showToast(`${currentList.name} se ha actualizado`);
+    },
+  });
+  sharedListSyncs.set(list.id, { shareId, sync });
+  await sync.start(sharedListPayload(list));
+}
+
+function initializeAllSharedListSyncs() {
+  const activeIds = new Set(
+    state.specialLists
+      .filter((list) => normalizeFamilyId(list.shareId))
+      .map((list) => list.id),
+  );
+  sharedListSyncs.forEach((entry, listId) => {
+    if (listId !== "standalone" && !activeIds.has(listId)) {
+      entry.sync.stop();
+      sharedListSyncs.delete(listId);
+    }
+  });
+  state.specialLists.forEach((list) => {
+    if (normalizeFamilyId(list.shareId)) initializeSpecialListSync(list).catch(() => {});
+  });
+}
+
+async function initializeStandaloneListSharing() {
+  document.body.classList.add("standalone-special-list");
+  standaloneList = { id: "standalone", name: "Lista compartida", items: [] };
+  const sync = createSharedListSync({
+    databaseUrl: DATABASE_URL,
+    listId: standaloneListId,
+    deviceId,
+    onRemoteState: (remoteState, { initial = false } = {}) => {
+      standaloneList = {
+        id: "standalone",
+        ...normalizeSharedList(remoteState, standaloneList?.name),
+      };
+      render();
+      if (!initial) showToast(`${standaloneList.name} se ha actualizado`);
+    },
+  });
+  sharedListSyncs.set("standalone", { shareId: standaloneListId, sync });
+  await sync.start(sharedListPayload(standaloneList));
+}
+
+function applyRemoteFamilyState(remoteState, { initial = false } = {}) {
+  state = hydrateState(mergeSharedState(remoteState, state.settings));
+  if (activeListId !== "main" && activeListId !== "standalone" && !specialListById(activeListId)) {
+    activeListId = "main";
+  }
+  saveState({ sync: false });
+  initializeAllSharedListSyncs();
+  render();
+  if (!initial) showToast("Lista actualizada desde el otro móvil");
+}
+
+async function initializeFamilySharing() {
+  familySync?.stop();
+  familySync = null;
+  if (!familyId) {
+    setFamilyStatus("local");
+    initializeAllSharedListSyncs();
+    return;
+  }
+  familySync = createFamilySync({
+    databaseUrl: DATABASE_URL,
+    familyId,
+    deviceId,
+    onRemoteState: applyRemoteFamilyState,
+    onStatus: setFamilyStatus,
+  });
+  await familySync.start(sharedStateFrom(state));
+  initializeAllSharedListSyncs();
+}
+
+async function shareFamilyLink() {
+  if (!familyId) {
+    familyId = createFamilyId();
+    localStorage.setItem(FAMILY_STORAGE_KEY, familyId);
+    initializeFamilySharing().catch(() => setFamilyStatus("offline"));
+    familySync?.writeNow(sharedStateFrom(state)).catch(() => {});
+  }
+  const url = makeFamilyShareUrl(window.location.href, familyId);
+  const shareData = {
+    title: "Nuestra lista de la compra",
+    text: "Abre este enlace una vez para compartir y actualizar nuestra lista de la compra.",
+    url,
+  };
+  try {
+    if (navigator.share) {
+      await navigator.share(shareData);
+    } else if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(url);
+      showToast("Enlace familiar copiado");
+    } else {
+      window.prompt("Copia y comparte este enlace", url);
+    }
+  } catch (error) {
+    if (error?.name !== "AbortError") showToast("No he podido compartir el enlace");
+  }
+}
+
+function disconnectFamily() {
+  if (!confirm("¿Dejar de compartir esta lista en este móvil? Conservarás una copia de lo que hay ahora.")) return;
+  familySync?.stop();
+  familySync = null;
+  familyId = "";
+  localStorage.removeItem(FAMILY_STORAGE_KEY);
+  setFamilyStatus("local");
+  showToast("Este móvil ya no comparte la lista");
+}
+
+function selectList(listId) {
+  if (!listRecordById(listId)) return;
+  activeListId = listId;
+  shoppingMode = false;
+  render();
+}
+
+function openSpecialListDialog(listId = "") {
+  editingSpecialListId = listId;
+  const list = specialListById(listId);
+  $("#specialListDialogTitle").textContent = list ? `Renombrar ${list.name}` : "Nueva lista especial";
+  $("#specialListSave").textContent = list ? "Guardar nombre" : "Crear lista";
+  $("#specialListName").value = list?.name || "";
+  $("#specialListDialog").showModal();
+  setTimeout(() => $("#specialListName").focus(), 50);
+}
+
+function saveSpecialList(event) {
+  event.preventDefault();
+  const input = $("#specialListName");
+  const name = cleanListName(input.value, "");
+  if (!name) {
+    input.reportValidity();
+    return;
+  }
+
+  if (editingSpecialListId) {
+    const list = specialListById(editingSpecialListId);
+    if (!list) return;
+    list.name = name;
+    persistList(list.id);
+    showToast(`La lista ahora se llama ${name}`);
+  } else {
+    const list = {
+      id: globalThis.crypto?.randomUUID?.() || `lista-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      name,
+      shareId: "",
+      createdAt: new Date().toISOString(),
+      items: [],
+    };
+    state.specialLists.push(list);
+    activeListId = list.id;
+    saveState();
+    showToast(`${name} está preparada`);
+  }
+
+  editingSpecialListId = "";
+  $("#specialListDialog").close();
+  render();
+}
+
+function deleteSpecialList() {
+  const list = specialListById(activeListId);
+  if (!list || !confirm(`¿Eliminar la lista “${list.name}”? La compra habitual no cambiará.`)) return;
+  const shareId = normalizeFamilyId(list.shareId);
+  sharedSyncEntry(list.id)?.sync.stop();
+  sharedListSyncs.delete(list.id);
+  state.specialLists = state.specialLists.filter((candidate) => candidate.id !== list.id);
+  activeListId = "main";
+  saveState();
+  render();
+  showToast(`${list.name} eliminada`);
+  if (shareId) {
+    fetch(`${DATABASE_URL}/sharedLists/${shareId}.json`, { method: "DELETE" }).catch(() => {});
+  }
+}
+
+async function shareSpecialList() {
+  const list = specialListById(activeListId);
+  if (!list) return;
+  if (!normalizeFamilyId(list.shareId)) {
+    list.shareId = createFamilyId();
+    saveState();
+    initializeSpecialListSync(list).catch(() => {});
+    sharedSyncEntry(list.id)?.sync.writeNow(sharedListPayload(list)).catch(() => {});
+  }
+
+  const url = makeSharedListUrl(window.location.href, list.shareId);
+  const shareData = {
+    title: `Lista ${list.name}`,
+    text: `Puedes ver y actualizar únicamente la lista “${list.name}” desde este enlace.`,
+    url,
+  };
+  try {
+    if (navigator.share) {
+      await navigator.share(shareData);
+    } else if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(url);
+      showToast(`Enlace de ${list.name} copiado`);
+    } else {
+      window.prompt(`Copia y comparte la lista ${list.name}`, url);
+    }
+  } catch (error) {
+    if (error?.name !== "AbortError") showToast("No he podido compartir esta lista");
+  }
+}
+
+function renderListControls() {
+  const switcher = $("#listSwitcher");
+  switcher.innerHTML = [
+    `<button class="${activeListId === "main" ? "active" : ""}" type="button" data-list-select="main">Compra habitual</button>`,
+    ...state.specialLists.map((list) => (
+      `<button class="${activeListId === list.id ? "active" : ""}" type="button" data-list-select="${escapeHtml(list.id)}">${escapeHtml(list.name)}</button>`
+    )),
+  ].join("");
+
+  const list = specialListById(activeListId);
+  const actions = $("#specialListActions");
+  actions.hidden = !list;
+  if (list) $("#specialListShare").textContent = `Compartir ${list.name}`;
+}
+
 function render() {
   renderList();
+  renderExpirations();
   renderIdeas();
   renderHistory();
   renderShoppingDock();
+  renderFamilySharing();
   $("#speakToggle").checked = state.settings.speak;
-  const pending = state.items.filter((item) => !item.checked).length;
-  $("#headerSummary").textContent = pending ? `${pending} ${pending === 1 ? "producto pendiente" : "productos pendientes"}` : "Tu lista familiar";
+  const list = activeListRecord();
+  const pending = listItems().filter((item) => !item.checked).length;
+  $("#headerSummary").textContent = activeListId === "main"
+    ? (pending ? `${pending} ${pending === 1 ? "producto pendiente" : "productos pendientes"}` : "Tu lista familiar")
+    : `${list?.name || "Lista compartida"} · ${pending} ${pending === 1 ? "pendiente" : "pendientes"}`;
 }
 
 function renderList() {
   const content = $("#listContent");
-  $("#itemCount").textContent = state.items.length;
-  $("#shoppingStart").disabled = !state.items.length;
+  const list = activeListRecord() || { name: "Lista compartida", items: [] };
+  const items = list.items || [];
+  renderListControls();
+  $("#listTitle").textContent = list.name;
+  $("#itemCount").textContent = items.length;
+  $("#shoppingStart").hidden = activeListId !== "main";
+  $("#shoppingStart").disabled = !items.length;
+  if (!document.body.classList.contains("listening")) {
+    $("#voiceTitle").textContent = activeListId === "main" ? "¿Qué hace falta?" : `¿Qué añadimos a ${list.name}?`;
+    $("#voiceHint").textContent = activeListId === "main"
+      ? "Toca el micrófono y di “leche, pan y dos kilos de patatas”."
+      : `Lo que añadas quedará solo en la lista ${list.name}.`;
+  }
 
-  if (!state.items.length) {
+  if (!items.length) {
     content.innerHTML = `
       <div class="empty-state">
         <div class="empty-illustration">
           <span></span><span></span><span></span>
           ${icon("basket")}
         </div>
-        <h3>La cesta está esperando</h3>
-        <p>Todo lo que añadas se ordenará automáticamente por familias.</p>
+        <h3>${activeListId === "main" ? "La cesta está esperando" : `${escapeHtml(list.name)} está vacía`}</h3>
+        <p>${activeListId === "main" ? "Todo lo que añadas se ordenará automáticamente por familias." : "Añade aquí lo necesario para esta ocasión. No se mezclará con la compra habitual."}</p>
       </div>`;
     return;
   }
 
-  content.innerHTML = `<div class="category-list">${groupItems(state.items).map(({ category, items }) => {
+  content.innerHTML = `<div class="category-list">${groupItems(items).map(({ category, items: categoryItems }) => {
     const meta = CATEGORY_META[category];
     return `
       <section class="category-group" style="--category-color:${meta.color}">
         <div class="category-heading">
           <span class="category-icon">${icon(meta.icon)}</span>
           <h3>${escapeHtml(category)}</h3>
-          <span>${items.filter((item) => !item.checked).length}</span>
+          <span>${categoryItems.filter((item) => !item.checked).length}</span>
         </div>
         <div class="item-list">
-          ${items.map(renderItem).join("")}
+          ${categoryItems.map(renderItem).join("")}
         </div>
       </section>`;
   }).join("")}</div>`;
@@ -156,15 +552,11 @@ function renderItem(item) {
 
 function renderIdeas() {
   const { remembered, seasonal } = getSuggestions(state);
-  const expirations = getActiveExpirations(state);
   const content = $("#ideasContent");
-  const total = remembered.length + seasonal.length + expirations.filter((entry) => entry.daysLeft <= 3).length;
+  const total = remembered.length + seasonal.length;
   $("#ideaDot").classList.toggle("visible", total > 0);
 
   const blocks = [];
-  if (expirations.length) {
-    blocks.push(expirationBlock(expirations));
-  }
   if (remembered.length) {
     blocks.push(suggestionBlock("Puede que falte", "Según vuestro historial", remembered, "history"));
   }
@@ -182,6 +574,25 @@ function renderIdeas() {
   content.innerHTML = blocks.join("");
 }
 
+function renderExpirations() {
+  const expirations = getActiveExpirations(state);
+  const content = $("#expirationContent");
+  const count = $("#expirationCount");
+  const dot = $("#expirationDot");
+  if (!content || !count || !dot) return;
+  count.textContent = expirations.length;
+  dot.classList.toggle("visible", expirations.some((entry) => entry.daysLeft <= 3));
+  $("#manualExpirationDate").min = localDateValue();
+  content.innerHTML = expirations.length
+    ? expirationBlock(expirations, false)
+    : `
+      <div class="ideas-empty expiration-empty">
+        ${icon("snow")}
+        <h3>No hay caducidades pendientes</h3>
+        <p>Añadid aquí cualquier alimento delicado, aunque no estuviera en la lista de la compra.</p>
+      </div>`;
+}
+
 function expirationLabel(daysLeft) {
   if (daysLeft < 0) return `Caducó hace ${Math.abs(daysLeft)} ${Math.abs(daysLeft) === 1 ? "día" : "días"}`;
   if (daysLeft === 0) return "Caduca hoy";
@@ -189,10 +600,10 @@ function expirationLabel(daysLeft) {
   return `Caduca en ${daysLeft} días`;
 }
 
-function expirationBlock(expirations) {
+function expirationBlock(expirations, showHeading = true) {
   return `
     <section class="expiration-section">
-      <div class="suggestion-heading"><div><h2>Caducidades</h2><p>Lo más delicado, ordenado por urgencia</p></div></div>
+      ${showHeading ? '<div class="suggestion-heading"><div><h2>Caducidades</h2><p>Lo más delicado, ordenado por urgencia</p></div></div>' : ""}
       <div class="expiration-list">
         ${expirations.map((entry) => {
           const urgency = entry.daysLeft <= 1 ? "urgent" : entry.daysLeft <= 3 ? "soon" : "";
@@ -268,18 +679,20 @@ function addEntries(entries, options = {}) {
     return;
   }
 
+  const targetListId = options.listId || activeListId;
+  const targetItems = listItems(targetListId);
   const addedNames = [];
   entries.forEach((entry) => {
-    const duplicate = state.items.find((item) => item.key === entry.key);
+    const duplicate = targetItems.find((item) => item.key === entry.key);
     if (duplicate) {
-      duplicateQueue.push({ existingId: duplicate.id, entry });
+      duplicateQueue.push({ listId: targetListId, existingId: duplicate.id, entry });
     } else {
-      state.items.push(makeItem(entry));
-      registerRequest(state, entry);
+      targetItems.push(makeItem(entry));
+      if (targetListId === "main") registerRequest(state, entry);
       addedNames.push(entry.name);
     }
   });
-  saveState();
+  persistList(targetListId);
   render();
 
   if (addedNames.length) {
@@ -293,7 +706,7 @@ function addEntries(entries, options = {}) {
 function showNextDuplicate() {
   currentDuplicate = duplicateQueue.shift();
   if (!currentDuplicate) return;
-  const existing = state.items.find((item) => item.id === currentDuplicate.existingId);
+  const existing = listItems(currentDuplicate.listId).find((item) => item.id === currentDuplicate.existingId);
   if (!existing) {
     currentDuplicate = null;
     showNextDuplicate();
@@ -306,10 +719,11 @@ function showNextDuplicate() {
 }
 
 function resolveDuplicate(addMore) {
-  const existing = state.items.find((item) => item.id === currentDuplicate?.existingId);
+  const listId = currentDuplicate?.listId || "main";
+  const existing = listItems(listId).find((item) => item.id === currentDuplicate?.existingId);
   if (existing && addMore) {
     existing.quantity += currentDuplicate.entry.quantity || 1;
-    registerRequest(state, currentDuplicate.entry);
+    if (listId === "main") registerRequest(state, currentDuplicate.entry);
     showToast(`Cantidad de ${existing.name}: ${existing.quantity}`);
   }
   $("#duplicateDialog").close();
@@ -380,13 +794,36 @@ function saveExtraPurchase(entry, expiresOn, askPermission = false) {
   const now = Date.now();
   registerPurchase(state, entry, now);
   addExpiration(state, entry, expiresOn, now);
-  saveState();
+  persistList(listId);
   render();
-  navigate("ideas");
+  navigate("expiration");
   const message = `Caducidad guardada para ${entry.name}`;
   showToast(message);
   speak(`${message}. Te avisaré cuando falten tres días y un día.`);
   if (askPermission) requestNotificationPermission();
+  setTimeout(checkExpirationAlerts, 150);
+}
+
+function saveManualExpiration(event) {
+  event.preventDefault();
+  const productInput = $("#manualExpirationProduct");
+  const dateInput = $("#manualExpirationDate");
+  if (!productInput.value.trim()) {
+    productInput.reportValidity();
+    return;
+  }
+  if (!dateInput.value) {
+    dateInput.reportValidity();
+    return;
+  }
+  const entry = parseEntry(productInput.value);
+  addExpiration(state, entry, dateInput.value);
+  saveState();
+  render();
+  productInput.value = "";
+  dateInput.value = "";
+  showToast(`Caducidad añadida para ${entry.name}`);
+  requestNotificationPermission();
   setTimeout(checkExpirationAlerts, 150);
 }
 
@@ -454,7 +891,7 @@ function saveExpirationDate() {
   }
   addExpiration(state, currentExpirationPrompt, input.value);
   saveState();
-  renderIdeas();
+  renderExpirations();
   $("#expirationDateDialog").close();
   requestNotificationPermission();
   showNextExpirationPrompt();
@@ -470,7 +907,7 @@ function markExpirationConsumed(expirationId) {
   if (!entry) return;
   entry.consumedAt = new Date().toISOString();
   saveState();
-  renderIdeas();
+  render();
   showToast(`${entry.name}: marcado como consumido`);
 }
 
@@ -536,7 +973,7 @@ function resolveExpirationAlert(consumed) {
   const shouldFreeze = !consumed && currentExpirationAlert.threshold === 1 && isFreezable(currentExpirationAlert);
   $("#expirationAlertDialog").close();
   saveState();
-  renderIdeas();
+  render();
   if (shouldFreeze) {
     showToast(`Conviene congelar ${currentExpirationAlert.name.toLocaleLowerCase("es")} hoy`);
     speak(`Te recomiendo congelar ${currentExpirationAlert.name.toLocaleLowerCase("es")} hoy.`);
@@ -551,13 +988,15 @@ function checkExpirationAlerts() {
   showNextExpirationAlert();
 }
 
-function readList() {
-  if (!state.items.length) {
+function readList(listId = activeListId) {
+  const items = listItems(listId);
+  const list = listRecordById(listId);
+  if (!items.length) {
     speak("La lista está vacía");
     showToast("La lista está vacía");
     return;
   }
-  const names = state.items.filter((item) => !item.checked).map((item) => {
+  const names = items.filter((item) => !item.checked).map((item) => {
     if (item.unit) return `${item.quantity} ${item.unit} de ${item.name}`;
     return `${item.quantity > 1 ? `${item.quantity} de ` : ""}${item.name}`;
   });
@@ -566,22 +1005,28 @@ function readList() {
     showToast("Todos los productos están marcados");
     return;
   }
-  speak(`En la lista hay: ${names.join(", ")}.`);
-  showToast(shoppingSummary(state.items));
+  speak(`En ${list?.name || "la lista"} hay: ${names.join(", ")}.`);
+  showToast(shoppingSummary(items));
 }
 
-function handleVoiceText(text) {
+function handleVoiceText(text, options = {}) {
+  const targetListId = options.listId || activeListId;
   const command = detectVoiceCommand(text);
-  if (command.type === "shopping") return enterShoppingMode();
+  if (command.type === "shopping") {
+    activeListId = "main";
+    return enterShoppingMode();
+  }
   if (command.type === "finish") return requestFinishShopping();
-  if (command.type === "read") return readList();
+  if (command.type === "read") return readList(targetListId);
   if (command.type === "show-list") {
+    activeListId = targetListId;
     navigate("list");
-    showToast(shoppingSummary(state.items));
+    render();
+    showToast(shoppingSummary(listItems(targetListId)));
     return;
   }
   if (command.type === "extra-expiration") return handleExtraExpirationCommand(command);
-  addEntries(command.entries, { fromVoice: true });
+  addEntries(command.entries, { fromVoice: true, listId: targetListId });
 }
 
 function handleLaunchCommand() {
@@ -595,7 +1040,7 @@ function handleLaunchCommand() {
   const spoken = command || `agrega ${directAdd}`;
   $("#liveTranscript").textContent = spoken;
   setTimeout(() => {
-    handleVoiceText(spoken);
+    handleVoiceText(spoken, { listId: "main" });
     setTimeout(() => { $("#liveTranscript").textContent = ""; }, 3000);
   }, 300);
 }
@@ -694,8 +1139,15 @@ $("#addForm").addEventListener("submit", (event) => {
   input.value = "";
   input.focus();
 });
+$("#manualExpirationForm").addEventListener("submit", saveManualExpiration);
+$("#specialListForm").addEventListener("submit", saveSpecialList);
 
 $("#micButton").addEventListener("click", startVoice);
+$("#specialListCreate").addEventListener("click", () => openSpecialListDialog());
+$("#specialListRename").addEventListener("click", () => openSpecialListDialog(activeListId));
+$("#specialListShare").addEventListener("click", shareSpecialList);
+$("#specialListDelete").addEventListener("click", deleteSpecialList);
+$("#specialListCancel").addEventListener("click", () => $("#specialListDialog").close());
 $("#shoppingStart").addEventListener("click", enterShoppingMode);
 $("#finishShopping").addEventListener("click", requestFinishShopping);
 $("#finishConfirm").addEventListener("click", finishShopping);
@@ -713,24 +1165,29 @@ document.addEventListener("click", (event) => {
   const nav = event.target.closest("[data-nav]");
   if (nav) navigate(nav.dataset.nav);
 
+  const listSelector = event.target.closest("[data-list-select]");
+  if (listSelector) selectList(listSelector.dataset.listSelect);
+
   const itemElement = event.target.closest("[data-item-id]");
   const itemAction = event.target.closest("[data-action]");
   if (itemElement && itemAction) {
-    const item = state.items.find((entry) => entry.id === itemElement.dataset.itemId);
+    const items = listItems();
+    const item = items.find((entry) => entry.id === itemElement.dataset.itemId);
     if (!item) return;
     const action = itemAction.dataset.action;
     if (action === "toggle") item.checked = !item.checked;
     if (action === "increase") item.quantity += 1;
     if (action === "decrease") item.quantity = Math.max(1, item.quantity - 1);
-    if (action === "remove") state.items = state.items.filter((entry) => entry.id !== item.id);
-    saveState();
+    if (action === "remove") replaceListItems(activeListId, items.filter((entry) => entry.id !== item.id));
+    persistList();
     render();
     navigator.vibrate?.(20);
   }
 
   const suggestion = event.target.closest("[data-suggest-key]");
   if (suggestion) {
-    addEntries(parseSpokenList(suggestion.dataset.suggestName));
+    activeListId = "main";
+    addEntries(parseSpokenList(suggestion.dataset.suggestName), { listId: "main" });
     navigate("list");
   }
   const dismiss = event.target.closest("[data-dismiss]");
@@ -746,6 +1203,8 @@ $("#speakToggle").addEventListener("change", (event) => {
   state.settings.speak = event.target.checked;
   saveState();
 });
+$("#familyShareButton").addEventListener("click", shareFamilyLink);
+$("#familyDisconnectButton").addEventListener("click", disconnectFamily);
 $("#exportButton").addEventListener("click", exportData);
 $("#importInput").addEventListener("change", (event) => event.target.files[0] && importData(event.target.files[0]));
 $("#clearButton").addEventListener("click", () => {
@@ -759,12 +1218,27 @@ $("#clearButton").addEventListener("click", () => {
 
 window.addEventListener("beforeinstallprompt", (event) => event.preventDefault());
 if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => navigator.serviceWorker.register("./service-worker.js").catch(() => {}));
+  window.addEventListener("load", () => navigator.serviceWorker.register("./service-worker.js?v=12").catch(() => {}));
 }
+function refreshSharedData() {
+  familySync?.refresh();
+  sharedListSyncs.forEach((entry) => entry.sync.refresh());
+}
+
+window.addEventListener("online", refreshSharedData);
 document.addEventListener("visibilitychange", () => {
-  if (document.visibilityState === "visible") checkExpirationAlerts();
+  if (document.visibilityState === "visible") {
+    refreshSharedData();
+    if (!standaloneListId) checkExpirationAlerts();
+  }
 });
 
-render();
-handleLaunchCommand();
-setTimeout(checkExpirationAlerts, 500);
+async function bootstrap() {
+  render();
+  if (standaloneListId) await initializeStandaloneListSharing();
+  else await initializeFamilySharing();
+  handleLaunchCommand();
+  if (!standaloneListId) setTimeout(checkExpirationAlerts, 500);
+}
+
+bootstrap();

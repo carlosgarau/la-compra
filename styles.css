@@ -28,6 +28,7 @@ body {
 }
 button, input { font: inherit; }
 button { color: inherit; }
+[hidden] { display: none !important; }
 button:focus-visible, input:focus-visible { outline: 3px solid rgba(40, 95, 67, 0.28); outline-offset: 2px; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; }
 .app-shell { width: min(100%, 740px); min-height: 100vh; margin: 0 auto; padding: 0 22px 116px; }
@@ -50,6 +51,11 @@ button:focus-visible, input:focus-visible { outline: 3px solid rgba(40, 95, 67, 
 .brand strong, .brand small { display: block; }
 .brand strong { font-size: 17px; letter-spacing: -.02em; }
 .brand small { margin-top: 1px; color: var(--muted); font-size: 11px; }
+.topbar-actions { display: flex; align-items: center; gap: 9px; }
+.family-badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 9px; border-radius: 99px; color: #2c6044; background: #e1eee5; font-size: 9px; font-weight: 800; }
+.family-badge::before { width: 6px; height: 6px; border-radius: 50%; background: currentColor; content: ""; }
+.family-badge.connecting { color: #7b6327; background: #f5edce; }
+.family-badge.offline { color: #9b463e; background: #f8e4df; }
 .icon-button { display: grid; width: 42px; height: 42px; padding: 0; place-items: center; border: 1px solid var(--line); border-radius: 50%; background: rgba(255, 253, 248, .78); cursor: pointer; }
 .icon-button svg { width: 21px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 
@@ -91,6 +97,19 @@ button:focus-visible, input:focus-visible { outline: 3px solid rgba(40, 95, 67, 
 .quick-add input:focus { outline: none; }
 .quick-add button, .shopping-start { border: 0; border-radius: 12px; font-weight: 750; cursor: pointer; }
 .quick-add button { padding: 11px 17px; color: #fff; background: var(--green); }
+
+.list-selector-row { display: flex; align-items: center; gap: 9px; margin: 17px 0 10px; }
+.list-switcher { display: flex; min-width: 0; flex: 1; gap: 7px; overflow-x: auto; padding: 2px 0; scrollbar-width: none; }
+.list-switcher::-webkit-scrollbar { display: none; }
+.list-switcher button, .list-create-button { min-height: 38px; flex: 0 0 auto; padding: 0 13px; border: 1px solid var(--line); border-radius: 99px; background: rgba(255,253,248,.82); font-size: 11px; font-weight: 780; cursor: pointer; }
+.list-switcher button.active { border-color: var(--green); color: #fff; background: var(--green); }
+.list-create-button { color: var(--green); background: rgba(40,95,67,.08); }
+.special-list-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 13px; padding: 11px 13px; border: 1px solid #d8dfc3; border-radius: 15px; background: #f0f4df; }
+.special-list-actions > span { color: var(--muted); font-size: 9px; line-height: 1.35; }
+.special-list-actions > div { display: flex; flex: 0 0 auto; gap: 6px; }
+.special-list-actions button { min-height: 32px; padding: 0 10px; border: 0; border-radius: 10px; color: var(--green); background: rgba(40,95,67,.1); font-size: 9px; font-weight: 800; cursor: pointer; }
+.special-list-actions button.share { color: #fff; background: var(--green); }
+.special-list-actions button.delete { color: #9b463e; background: #f8e4df; }
 
 .section-heading { display: flex; align-items: end; justify-content: space-between; gap: 16px; margin-bottom: 15px; }
 .section-heading h2 { margin: 5px 0 0; font-family: Georgia, "Times New Roman", serif; font-size: 30px; font-weight: 500; letter-spacing: -.035em; }
@@ -152,6 +171,11 @@ button:focus-visible, input:focus-visible { outline: 3px solid rgba(40, 95, 67, 
 .suggestion-add { display: flex; align-items: center; justify-content: space-between; width: 100%; margin-top: auto; padding: 9px 11px; border: 0; border-radius: 11px; color: #fff; background: var(--green); font-size: 11px; font-weight: 800; cursor: pointer; }
 .suggestion-add span { font-size: 17px; line-height: .7; }
 .ideas-empty > svg { width: 44px; fill: none; stroke: var(--green); stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
+.expiration-add-form { display: grid; grid-template-columns: minmax(0, 1fr) 155px auto; align-items: end; gap: 10px; margin-bottom: 24px; padding: 15px; border: 1px solid var(--line); border-radius: 20px; background: rgba(255,253,248,.84); }
+.expiration-add-form label span { display: block; margin: 0 0 6px 2px; color: var(--muted); font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
+.expiration-add-form input { width: 100%; min-height: 45px; padding: 0 12px; border: 1px solid var(--line); border-radius: 12px; color: var(--ink); background: #fff; }
+.expiration-add-form button { min-height: 45px; padding: 0 15px; border: 0; border-radius: 12px; color: #fff; background: var(--green); font-size: 11px; font-weight: 800; cursor: pointer; }
+.expiration-empty { margin-top: 8px; }
 .expiration-section { margin-bottom: 34px; }
 .expiration-list { display: grid; gap: 10px; }
 .expiration-card { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 13px; padding: 14px; border: 1px solid var(--line); border-radius: 18px; background: rgba(255,253,248,.88); }
@@ -181,7 +205,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid rgba(40, 95, 67, 
 .history-list section > div { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-top: 1px solid rgba(43,58,49,.07); font-size: 13px; }
 .history-list small { color: var(--muted); }
 
-.bottom-nav { position: fixed; z-index: 30; left: 50%; bottom: max(12px, env(safe-area-inset-bottom)); display: grid; width: min(calc(100% - 28px), 500px); grid-template-columns: repeat(3, 1fr); padding: 7px; border: 1px solid rgba(43,58,49,.11); border-radius: 23px; background: rgba(255,253,248,.9); box-shadow: 0 16px 45px rgba(35,48,40,.15); backdrop-filter: blur(18px); transform: translateX(-50%); }
+.bottom-nav { position: fixed; z-index: 30; left: 50%; bottom: max(12px, env(safe-area-inset-bottom)); display: grid; width: min(calc(100% - 28px), 560px); grid-template-columns: repeat(4, 1fr); padding: 7px; border: 1px solid rgba(43,58,49,.11); border-radius: 23px; background: rgba(255,253,248,.9); box-shadow: 0 16px 45px rgba(35,48,40,.15); backdrop-filter: blur(18px); transform: translateX(-50%); }
 .bottom-nav button { position: relative; display: flex; min-height: 53px; align-items: center; justify-content: center; gap: 7px; border: 0; border-radius: 17px; color: var(--muted); background: transparent; font-size: 11px; font-weight: 750; cursor: pointer; }
 .bottom-nav button.active { color: #fff; background: var(--green); }
 .bottom-nav svg { width: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
@@ -207,6 +231,19 @@ dialog::backdrop { background: rgba(26,35,29,.42); backdrop-filter: blur(5px); }
 .finish-icon { color: var(--green); background: #e2edbf; }
 .app-dialog h2 { margin: 9px 0; font-family: Georgia, serif; font-size: 26px; font-weight: 500; line-height: 1.05; }
 .app-dialog p { margin: 0 auto 22px; color: var(--muted); font-size: 13px; line-height: 1.55; }
+.special-list-icon { color: var(--green); background: #e5edce; }
+.special-list-name-field { display: block; margin: 0 0 18px; text-align: left; }
+.special-list-name-field span { display: block; margin: 0 0 6px 2px; color: var(--muted); font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
+.special-list-name-field input { width: 100%; min-height: 48px; padding: 0 13px; border: 1px solid var(--line); border-radius: 13px; color: var(--ink); background: #fff; }
+
+.standalone-special-list .bottom-nav,
+.standalone-special-list #settingsButton,
+.standalone-special-list #familyBadge,
+.standalone-special-list #listSelectorRow,
+.standalone-special-list #specialListActions,
+.standalone-special-list #shoppingStart { display: none !important; }
+.standalone-special-list .app-shell { padding-bottom: 38px; }
+
 .dialog-actions { display: grid; gap: 8px; }
 .dialog-actions button { min-height: 48px; border: 0; border-radius: 14px; font-size: 12px; font-weight: 800; cursor: pointer; }
 .dialog-actions .primary { color: #fff; background: var(--green); }
@@ -239,6 +276,11 @@ input[role="switch"]:checked::after { transform: translateX(18px); }
 .settings-group > p { margin: 4px 0 13px; color: var(--muted); font-size: 11px; line-height: 1.5; }
 .settings-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .settings-actions button, .import-button { display: grid; min-height: 44px; place-items: center; border: 1px solid var(--line); border-radius: 12px; background: #f4f2ec; font-size: 11px; font-weight: 750; cursor: pointer; }
+.family-settings { border-bottom: 1px solid var(--line); }
+.family-actions { display: flex; }
+.family-actions button { flex: 1; padding: 8px 12px; }
+.family-actions .family-share-button { border-color: transparent; color: #fff; background: var(--green); }
+.family-privacy { display: block; margin-top: 10px; color: var(--muted); font-size: 9px; line-height: 1.45; }
 .import-button input { display: none; }
 .danger-button { width: 100%; min-height: 44px; border: 0; border-radius: 12px; color: #a63d32; background: #fae9e5; font-size: 11px; font-weight: 800; cursor: pointer; }
 .toast { position: fixed; z-index: 100; left: 50%; top: calc(18px + env(safe-area-inset-top)); max-width: calc(100% - 40px); padding: 11px 16px; border-radius: 99px; color: #fff; background: rgba(25,40,31,.92); box-shadow: 0 10px 28px rgba(0,0,0,.18); font-size: 12px; font-weight: 700; opacity: 0; pointer-events: none; transform: translate(-50%, -18px); transition: .25s ease; }
@@ -254,6 +296,15 @@ input[role="switch"]:checked::after { transform: translateX(18px); }
   .section-heading { align-items: center; }
   .shopping-start { padding: 10px; }
   .shopping-start svg { width: 17px; }
+  .family-badge { max-width: 88px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .list-selector-row { align-items: stretch; }
+  .list-create-button { padding: 0 10px; }
+  .special-list-actions { align-items: stretch; flex-direction: column; }
+  .special-list-actions > div { display: grid; grid-template-columns: 1fr 1.35fr .85fr; }
+  .expiration-add-form { grid-template-columns: minmax(0, 1fr) 145px; }
+  .expiration-add-form button { grid-column: 1 / -1; }
+  .bottom-nav button { flex-direction: column; gap: 2px; font-size: 9px; }
+  .bottom-nav svg { width: 18px; }
   .suggestion-card { min-height: 170px; padding: 14px; }
   .suggestion-card strong { font-size: 16px; }
   .bottom-nav { width: calc(100% - 22px); }

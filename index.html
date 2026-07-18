@@ -11,7 +11,7 @@
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="icon" href="icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="apple-touch-icon.png" />
-    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="styles.css?v=12" />
     <title>La compra</title>
   </head>
   <body>
@@ -23,9 +23,12 @@
           </span>
           <span><strong>La compra</strong><small id="headerSummary">Tu lista familiar</small></span>
         </button>
-        <button class="icon-button" id="settingsButton" type="button" aria-label="Ajustes">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.1V21h-4v-.1A1.7 1.7 0 0 0 8.6 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1.1-.4H3v-4h.1A1.7 1.7 0 0 0 4.6 8.6a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.6 1.7 1.7 0 0 0 .4-1.1V3h4v.1A1.7 1.7 0 0 0 15.4 4a1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06A1.7 1.7 0 0 0 19.4 9c.13.36.34.7.6 1 .29.3.68.47 1.1.48h.1v4h-.1A1.7 1.7 0 0 0 19.4 15Z"/></svg>
-        </button>
+        <div class="topbar-actions">
+          <span class="family-badge connecting" id="familyBadge" hidden>Conectando</span>
+          <button class="icon-button" id="settingsButton" type="button" aria-label="Ajustes">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.1V21h-4v-.1A1.7 1.7 0 0 0 8.6 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1.1-.4H3v-4h.1A1.7 1.7 0 0 0 4.6 8.6a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.6 1.7 1.7 0 0 0 .4-1.1V3h4v.1A1.7 1.7 0 0 0 15.4 4a1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06-.06A1.7 1.7 0 0 0 19.4 9c.13.36.34.7.6 1 .29.3.68.47 1.1.48h.1v4h-.1A1.7 1.7 0 0 0 19.4 15Z"/></svg>
+          </button>
+        </div>
       </header>
 
       <main>
@@ -43,6 +46,20 @@
             </button>
           </div>
 
+          <div class="list-selector-row" id="listSelectorRow">
+            <div class="list-switcher" id="listSwitcher" aria-label="Cambiar de lista"></div>
+            <button class="list-create-button" id="specialListCreate" type="button">+ Nueva lista</button>
+          </div>
+
+          <div class="special-list-actions" id="specialListActions" hidden>
+            <span>Esta lista no afecta a la compra habitual.</span>
+            <div>
+              <button id="specialListRename" type="button">Renombrar</button>
+              <button class="share" id="specialListShare" type="button">Compartir lista</button>
+              <button class="delete" id="specialListDelete" type="button" aria-label="Eliminar lista">Eliminar</button>
+            </div>
+          </div>
+
           <form class="quick-add" id="addForm">
             <label class="sr-only" for="itemInput">Añadir productos</label>
             <input id="itemInput" autocomplete="off" enterkeyhint="done" placeholder="Escribe un producto…" />
@@ -53,7 +70,7 @@
             <div class="section-heading">
               <div>
                 <span class="eyebrow">AHORA</span>
-                <h2>Tu lista <span class="count-badge" id="itemCount">0</span></h2>
+                <h2><span id="listTitle">Compra habitual</span> <span class="count-badge" id="itemCount">0</span></h2>
               </div>
               <button class="shopping-start" id="shoppingStart" type="button">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 5 2 2 3-3M11 6h9M4 12l2 2 3-3M11 13h9M4 19l2 2 3-3M11 20h9"/></svg>
@@ -62,6 +79,26 @@
             </div>
             <div id="listContent"></div>
           </section>
+        </section>
+
+        <section class="view" id="expirationView" data-view="expiration">
+          <div class="page-intro">
+            <span class="eyebrow">DESPENSA Y NEVERA</span>
+            <h1>Productos con caducidad <span class="count-badge" id="expirationCount">0</span></h1>
+            <p>Una lista compartida para que ninguno de los dos olvide los alimentos más delicados.</p>
+          </div>
+          <form class="expiration-add-form" id="manualExpirationForm">
+            <label>
+              <span>Producto</span>
+              <input id="manualExpirationProduct" autocomplete="off" placeholder="Por ejemplo, hamburguesas" required />
+            </label>
+            <label>
+              <span>Caduca el</span>
+              <input id="manualExpirationDate" type="date" required />
+            </label>
+            <button type="submit">Añadir</button>
+          </form>
+          <div id="expirationContent"></div>
         </section>
 
         <section class="view" id="ideasView" data-view="ideas">
@@ -93,6 +130,10 @@
         <button class="active" type="button" data-nav="list">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13"/><circle cx="3" cy="6" r="1"/><circle cx="3" cy="12" r="1"/><circle cx="3" cy="18" r="1"/></svg>
           <span>Lista</span>
+        </button>
+        <button type="button" data-nav="expiration">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 7v5l3 2"/><circle cx="12" cy="12" r="9"/><path d="M9 2h6"/></svg>
+          <span>Caducidad</span><i id="expirationDot"></i>
         </button>
         <button type="button" data-nav="ideas">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6M10 22h4M8.5 14.5A7 7 0 1 1 15.5 14.5C14.5 15.3 14 16 14 18h-4c0-2-.5-2.7-1.5-3.5Z"/></svg>
@@ -184,6 +225,25 @@
       </div>
     </dialog>
 
+    <dialog class="app-dialog special-list-dialog" id="specialListDialog">
+      <div class="dialog-icon special-list-icon">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h14v14H5z"/><path d="M8 9h8M8 13h8M8 17h5"/></svg>
+      </div>
+      <span class="eyebrow">LISTA PUNTUAL</span>
+      <h2 id="specialListDialogTitle">Nueva lista especial</h2>
+      <p>Será independiente de la compra habitual, el historial y las sugerencias.</p>
+      <form id="specialListForm">
+        <label class="special-list-name-field">
+          <span>Nombre de la lista</span>
+          <input id="specialListName" type="text" maxlength="50" placeholder="Por ejemplo, Navidad" autocomplete="off" required />
+        </label>
+        <div class="dialog-actions">
+          <button class="primary" id="specialListSave" type="submit">Crear lista</button>
+          <button class="secondary" id="specialListCancel" type="button">Cancelar</button>
+        </div>
+      </form>
+    </dialog>
+
     <dialog class="settings-sheet" id="settingsDialog">
       <div class="sheet-handle"></div>
       <div class="sheet-heading">
@@ -194,9 +254,18 @@
         <span><strong>Confirmaciones por voz</strong><small>La app te responde al añadir y ante repetidos.</small></span>
         <input id="speakToggle" type="checkbox" role="switch" />
       </label>
+      <div class="settings-group family-settings">
+        <strong>Lista familiar</strong>
+        <p id="familyStatus">Esta copia solo está en este móvil.</p>
+        <div class="settings-actions family-actions">
+          <button class="family-share-button" id="familyShareButton" type="button">Crear lista compartida</button>
+          <button id="familyDisconnectButton" type="button" hidden>Dejar de compartir</button>
+        </div>
+        <small class="family-privacy">Solo podrá verla y modificarla quien tenga el enlace familiar. No lo publiques en redes.</small>
+      </div>
       <div class="settings-group">
         <strong>Tus datos</strong>
-        <p>Se guardan únicamente en este dispositivo. Exporta una copia si vas a cambiar de móvil.</p>
+        <p>La app conserva una copia en este móvil. Si activas la lista familiar, también la sincroniza para los dos.</p>
         <div class="settings-actions">
           <button id="exportButton" type="button">Exportar copia</button>
           <label class="import-button">Importar copia<input id="importInput" type="file" accept="application/json" /></label>
@@ -207,6 +276,6 @@
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-    <script type="module" src="app.mjs?v=11"></script>
+    <script type="module" src="app.mjs?v=12"></script>
   </body>
 </html>

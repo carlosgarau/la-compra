@@ -85,6 +85,7 @@ const CATEGORY_KEYWORDS = {
     "aceite", "vinagre", "cafe", "te", "infusion", "legumbre", "lenteja", "garbanzo",
     "alubia", "conserva", "tomate frito", "salsa", "mayonesa", "ketchup", "mostaza",
     "chocolate", "cacao", "fruto seco", "almendra", "nuez", "avena", "quinoa", "caldo",
+    "turron",
   ],
 };
 
@@ -167,7 +168,10 @@ export function titleCase(value) {
 export function categoryFor(name) {
   const normalized = normalizeText(name);
   for (const category of Object.keys(CATEGORY_KEYWORDS)) {
-    if (CATEGORY_KEYWORDS[category].some((keyword) => normalized.includes(keyword))) {
+    if (CATEGORY_KEYWORDS[category].some((keyword) => {
+      const escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/\s+/g, "\\s+");
+      return new RegExp(`(?:^|\\s)${escaped}(?:s|es)?(?:$|\\s)`).test(normalized);
+    })) {
       return category;
     }
   }
@@ -339,6 +343,7 @@ export function createInitialState() {
     catalog: {},
     purchases: [],
     expirations: [],
+    specialLists: [],
     dismissedSuggestions: {},
     settings: { speak: true },
   };
@@ -354,6 +359,15 @@ export function hydrateState(raw) {
     catalog: raw.catalog && typeof raw.catalog === "object" ? raw.catalog : {},
     purchases: Array.isArray(raw.purchases) ? raw.purchases : [],
     expirations: Array.isArray(raw.expirations) ? raw.expirations : [],
+    specialLists: Array.isArray(raw.specialLists)
+      ? raw.specialLists.map((list) => ({
+        id: String(list.id || ""),
+        name: titleCase(list.name || "Lista especial"),
+        shareId: String(list.shareId || ""),
+        createdAt: list.createdAt || new Date().toISOString(),
+        items: Array.isArray(list.items) ? list.items : [],
+      })).filter((list) => list.id)
+      : [],
     dismissedSuggestions: raw.dismissedSuggestions && typeof raw.dismissedSuggestions === "object"
       ? raw.dismissedSuggestions
       : {},
