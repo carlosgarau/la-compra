@@ -18,7 +18,7 @@ import {
   registerPurchase,
   registerRequest,
   shoppingSummary,
-} from "./core.mjs?v=14";
+} from "./core.mjs?v=15";
 import {
   createFamilyId,
   createFamilySync,
@@ -37,7 +37,7 @@ import {
   normalizeFamilyId,
   sharedStateFrom,
   sharedListIdFromUrl,
-} from "./family-sync.mjs?v=14";
+} from "./family-sync.mjs?v=15";
 
 const STORAGE_KEY = "la-compra-state-v1";
 const DATABASE_URL = "https://la-compra-familiar-default-rtdb.europe-west1.firebasedatabase.app";
@@ -75,6 +75,8 @@ let duplicateQueue = [];
 let currentDuplicate = null;
 let expirationPromptQueue = [];
 let currentExpirationPrompt = null;
+let expirationPromptTotal = 0;
+let expirationPromptPosition = 0;
 let expirationAlertQueue = [];
 let currentExpirationAlert = null;
 let recognition = null;
@@ -822,7 +824,9 @@ function finishShopping() {
   saveState();
   render();
   if (delicate.length) {
-    expirationPromptQueue = delicate;
+    expirationPromptQueue = [...delicate];
+    expirationPromptTotal = delicate.length;
+    expirationPromptPosition = 0;
     showToast("Compra guardada. Revisemos las caducidades");
     speak("Compra guardada. Ahora te preguntaré las caducidades de los productos más delicados.");
     showNextExpirationPrompt();
@@ -913,13 +917,41 @@ function saveExtraExpirationFromDialog() {
 function showNextExpirationPrompt() {
   currentExpirationPrompt = expirationPromptQueue.shift() || null;
   if (!currentExpirationPrompt) {
+    expirationPromptTotal = 0;
+    expirationPromptPosition = 0;
     checkExpirationAlerts();
     return;
   }
-  $("#expirationDateTitle").textContent = `Caducidad de ${currentExpirationPrompt.name}`;
+  expirationPromptPosition += 1;
+  $("#expirationDateProduct").textContent = currentExpirationPrompt.name;
+  $("#expirationDateProgress").textContent = `Producto ${expirationPromptPosition} de ${expirationPromptTotal}`;
+  const amount = formatAmount(currentExpirationPrompt);
+  $("#expirationDateAmount").textContent = amount;
+  $("#expirationDateAmount").hidden = !amount;
   $("#expirationDateInput").value = "";
   $("#expirationDateInput").min = localDateValue();
+  updateExpirationQuickDates();
   $("#expirationDateDialog").showModal();
+}
+
+function expirationDateFromOffset(offset) {
+  const date = new Date();
+  date.setDate(date.getDate() + Number(offset));
+  return localDateValue(date);
+}
+
+function updateExpirationQuickDates() {
+  const selected = $("#expirationDateInput").value;
+  $$('[data-expiration-offset]').forEach((button) => {
+    const active = expirationDateFromOffset(button.dataset.expirationOffset) === selected;
+    button.classList.toggle("selected", active);
+    button.setAttribute("aria-pressed", String(active));
+  });
+}
+
+function selectExpirationQuickDate(event) {
+  $("#expirationDateInput").value = expirationDateFromOffset(event.currentTarget.dataset.expirationOffset);
+  updateExpirationQuickDates();
 }
 
 async function requestNotificationPermission() {
@@ -1205,6 +1237,8 @@ $("#duplicateYes").addEventListener("click", () => resolveDuplicate(true));
 $("#duplicateNo").addEventListener("click", () => resolveDuplicate(false));
 $("#expirationDateSave").addEventListener("click", saveExpirationDate);
 $("#expirationDateSkip").addEventListener("click", skipExpirationDate);
+$("#expirationDateInput").addEventListener("change", updateExpirationQuickDates);
+$$('[data-expiration-offset]').forEach((button) => button.addEventListener("click", selectExpirationQuickDate));
 $("#expirationConsumedYes").addEventListener("click", () => resolveExpirationAlert(true));
 $("#expirationConsumedNo").addEventListener("click", () => resolveExpirationAlert(false));
 $("#extraExpirationSave").addEventListener("click", saveExtraExpirationFromDialog);
@@ -1267,7 +1301,7 @@ $("#clearButton").addEventListener("click", () => {
 
 window.addEventListener("beforeinstallprompt", (event) => event.preventDefault());
 if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => navigator.serviceWorker.register("./service-worker.js?v=14").catch(() => {}));
+  window.addEventListener("load", () => navigator.serviceWorker.register("./service-worker.js?v=15").catch(() => {}));
 }
 function refreshSharedData() {
   familySync?.refresh();

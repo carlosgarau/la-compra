@@ -250,9 +250,26 @@ dialog::backdrop { background: rgba(26,35,29,.42); backdrop-filter: blur(5px); }
 .dialog-actions .secondary { color: var(--ink); background: #f0eee8; }
 .expiration-icon { color: var(--green); background: #e2edbf; }
 .expiration-warning-icon { color: #a64538; background: #f7d5ce; }
-.expiration-date-field { display: block; margin: -5px 0 20px; text-align: left; }
-.expiration-date-field span { display: block; margin-bottom: 7px; color: var(--muted); font-size: 10px; font-weight: 750; }
-.expiration-date-field input { width: 100%; min-height: 48px; padding: 0 13px; border: 1px solid var(--line); border-radius: 13px; color: var(--ink); background: #fff; font: inherit; }
+.expiration-date-dialog { max-height: calc(100dvh - 24px); padding: 0; overflow: auto; text-align: left; }
+.expiration-dialog-header { position: sticky; z-index: 2; top: 0; padding: 21px 23px 19px; border-bottom: 1px solid rgba(40,95,67,.1); background: #eff4df; }
+.expiration-dialog-kicker { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; color: var(--green); font-size: 9px; font-weight: 850; letter-spacing: .11em; }
+.expiration-dialog-kicker span:last-child { color: var(--muted); letter-spacing: 0; text-transform: none; }
+.expiration-product-card { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.expiration-product-card .dialog-icon { width: 48px; height: 48px; flex: 0 0 auto; margin: 0; border-radius: 16px; background: rgba(255,255,255,.72); }
+.expiration-product-card .dialog-icon svg { width: 25px; }
+.expiration-product-copy { min-width: 0; }
+.expiration-product-copy > span { display: block; margin-bottom: 3px; color: var(--muted); font-size: 8px; font-weight: 850; letter-spacing: .1em; }
+.expiration-date-dialog .expiration-product-copy h2 { margin: 0; overflow-wrap: anywhere; color: var(--green-dark); font-family: inherit; font-size: 23px; font-weight: 850; line-height: 1.08; }
+.expiration-product-copy small { display: block; margin-top: 3px; color: var(--green); font-size: 11px; font-weight: 750; }
+.expiration-dialog-body { padding: 20px 23px 23px; }
+.expiration-dialog-body h3 { margin: 0 0 6px; font-family: Georgia, serif; font-size: 24px; font-weight: 500; }
+.expiration-date-dialog .expiration-dialog-body > p { margin: 0 0 16px; font-size: 12px; }
+.expiration-quick-dates { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-bottom: 17px; }
+.expiration-quick-dates button { min-height: 42px; padding: 0 10px; border: 1px solid var(--line); border-radius: 12px; color: var(--green); background: #f3f5eb; font-size: 11px; font-weight: 800; cursor: pointer; }
+.expiration-quick-dates button.selected { border-color: var(--green); color: #fff; background: var(--green); box-shadow: 0 6px 16px rgba(40,95,67,.18); }
+.expiration-date-field { display: block; margin: 0 0 18px; text-align: left; }
+.expiration-date-field span { display: block; margin: 0 0 7px 2px; color: var(--muted); font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
+.expiration-date-field input { width: 100%; min-height: 50px; padding: 0 13px; border: 1px solid var(--line); border-radius: 13px; color: var(--ink); background: #fff; font: inherit; font-weight: 700; }
 .expiration-alert-dialog h2 { font-size: 24px; }
 .extra-purchase-fields { display: grid; gap: 11px; margin: -4px 0 20px; text-align: left; }
 .extra-purchase-fields label span { display: block; margin-bottom: 6px; color: var(--muted); font-size: 10px; font-weight: 750; }
@@ -311,6 +328,10 @@ input[role="switch"]:checked::after { transform: translateX(18px); }
   .quantity-control { display: flex; }
   .expiration-card { grid-template-columns: auto minmax(0, 1fr); }
   .expiration-card button { grid-column: 1 / -1; }
+  .expiration-date-dialog { width: calc(100% - 20px); max-height: calc(100dvh - max(20px, env(safe-area-inset-top))); margin: max(10px, env(safe-area-inset-top)) auto auto; border-radius: 24px; }
+  .expiration-dialog-header { padding: 18px 19px 16px; }
+  .expiration-dialog-body { padding: 17px 19px calc(19px + env(safe-area-inset-bottom)); }
+  .expiration-date-dialog .expiration-product-copy h2 { font-size: 21px; }
 }
 
 @media (min-width: 760px) {

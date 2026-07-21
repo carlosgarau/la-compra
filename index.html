@@ -8,10 +8,10 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="La compra" />
     <meta name="description" content="Tu lista de la compra familiar, con voz, memoria y sugerencias útiles." />
-    <link rel="manifest" href="manifest.webmanifest?v=14" />
+    <link rel="manifest" href="manifest.webmanifest?v=15" />
     <link rel="icon" href="icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="apple-touch-icon.png" />
-    <link rel="stylesheet" href="styles.css?v=14" />
+    <link rel="stylesheet" href="styles.css?v=15" />
     <title>La compra</title>
   </head>
   <body>
@@ -172,20 +172,40 @@
       </div>
     </dialog>
 
-    <dialog class="app-dialog" id="expirationDateDialog">
-      <div class="dialog-icon expiration-icon">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3v3M17 3v3M4 9h16M5 5h14v16H5z"/><path d="m9 15 2 2 4-5"/></svg>
+    <dialog class="app-dialog expiration-date-dialog" id="expirationDateDialog" aria-labelledby="expirationDateProduct" aria-describedby="expirationDateHelp">
+      <div class="expiration-dialog-header">
+        <div class="expiration-dialog-kicker">
+          <span>CONTROL DE CADUCIDAD</span>
+          <span id="expirationDateProgress">Producto 1 de 1</span>
+        </div>
+        <div class="expiration-product-card">
+          <div class="dialog-icon expiration-icon">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3v3M17 3v3M4 9h16M5 5h14v16H5z"/><path d="m9 15 2 2 4-5"/></svg>
+          </div>
+          <div class="expiration-product-copy">
+            <span>PRODUCTO COMPRADO</span>
+            <h2 id="expirationDateProduct">Producto</h2>
+            <small id="expirationDateAmount" hidden></small>
+          </div>
+        </div>
       </div>
-      <span class="eyebrow">CONTROL DE CADUCIDAD</span>
-      <h2 id="expirationDateTitle">¿Cuándo caduca?</h2>
-      <p>Te avisaré cuando falten 3 días y volveré a preguntarte cuando falte 1.</p>
-      <label class="expiration-date-field">
-        <span>Fecha de caducidad o consumo preferente</span>
-        <input id="expirationDateInput" type="date" required />
-      </label>
-      <div class="dialog-actions">
-        <button class="primary" id="expirationDateSave" type="button">Guardar fecha</button>
-        <button class="secondary" id="expirationDateSkip" type="button">Este producto no lo necesita</button>
+      <div class="expiration-dialog-body">
+        <h3 id="expirationDateTitle">¿Cuándo caduca?</h3>
+        <p id="expirationDateHelp">Elige una opción rápida o abre el calendario. Te avisaré 3 días antes y de nuevo cuando falte 1.</p>
+        <div class="expiration-quick-dates" aria-label="Fechas rápidas">
+          <button type="button" data-expiration-offset="0">Hoy</button>
+          <button type="button" data-expiration-offset="1">Mañana</button>
+          <button type="button" data-expiration-offset="3">En 3 días</button>
+          <button type="button" data-expiration-offset="7">En 7 días</button>
+        </div>
+        <label class="expiration-date-field">
+          <span id="expirationDateLabel">Otra fecha exacta</span>
+          <input id="expirationDateInput" type="date" aria-labelledby="expirationDateProduct expirationDateLabel" required />
+        </label>
+        <div class="dialog-actions">
+          <button class="primary" id="expirationDateSave" type="button">Guardar fecha</button>
+          <button class="secondary" id="expirationDateSkip" type="button">Este producto no necesita fecha</button>
+        </div>
       </div>
     </dialog>
 
@@ -276,6 +296,6 @@
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-    <script type="module" src="app.mjs?v=14"></script>
+    <script type="module" src="app.mjs?v=15"></script>
   </body>
 </html>
