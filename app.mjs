@@ -18,7 +18,7 @@ import {
   registerPurchase,
   registerRequest,
   shoppingSummary,
-} from "./core.mjs?v=15";
+} from "./core.mjs?v=16";
 import {
   createFamilyId,
   createFamilySync,
@@ -37,7 +37,7 @@ import {
   normalizeFamilyId,
   sharedStateFrom,
   sharedListIdFromUrl,
-} from "./family-sync.mjs?v=15";
+} from "./family-sync.mjs?v=16";
 
 const STORAGE_KEY = "la-compra-state-v1";
 const DATABASE_URL = "https://la-compra-familiar-default-rtdb.europe-west1.firebasedatabase.app";
@@ -63,6 +63,7 @@ let state = loadState();
 let standaloneListId = sharedListIdFromUrl(window.location.href);
 let familyId = standaloneListId ? "" : rememberFamilyId();
 let familySync = null;
+let serviceWorkerRegistration = null;
 let familyStatus = familyId ? "connecting" : "local";
 let deviceId = getDeviceId();
 let activeListId = standaloneListId ? "standalone" : "main";
@@ -1300,18 +1301,32 @@ $("#clearButton").addEventListener("click", () => {
 });
 
 window.addEventListener("beforeinstallprompt", (event) => event.preventDefault());
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => navigator.serviceWorker.register("./service-worker.js?v=15").catch(() => {}));
+
+async function initializeAppUpdates() {
+  if (!("serviceWorker" in navigator)) return;
+  serviceWorkerRegistration = await navigator.serviceWorker.register("./service-worker.js?v=16");
+  serviceWorkerRegistration.update().catch(() => {});
 }
+
+function checkForAppUpdate() {
+  if (shoppingMode || document.querySelector("dialog[open]")) return;
+  serviceWorkerRegistration?.update().catch(() => {});
+}
+
+window.addEventListener("load", () => initializeAppUpdates().catch(() => {}));
 function refreshSharedData() {
   familySync?.refresh();
   sharedListSyncs.forEach((entry) => entry.sync.refresh());
 }
 
-window.addEventListener("online", refreshSharedData);
+window.addEventListener("online", () => {
+  refreshSharedData();
+  checkForAppUpdate();
+});
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "visible") {
     refreshSharedData();
+    checkForAppUpdate();
     if (!standaloneListId) checkExpirationAlerts();
   }
 });
