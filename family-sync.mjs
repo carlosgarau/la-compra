@@ -180,6 +180,8 @@ export function createFamilySync({
   onStatus = () => {},
   setTimeoutImpl = globalThis.setTimeout,
   clearTimeoutImpl = globalThis.clearTimeout,
+  codec = null,
+  onAccessRequired = () => {},
 }) {
   const id = normalizeFamilyId(familyId);
   if (!id) throw new Error("El enlace familiar no es válido");
@@ -198,6 +200,27 @@ export function createFamilySync({
     if (!stopped) onStatus(status);
   }
 
+  function handleSyncError(error) {
+    if (["SHARED_PASSWORD_REQUIRED", "WRONG_SHARED_PASSWORD", "UNSUPPORTED_SHARED_ENCRYPTION"].includes(error?.code)) {
+      setStatus("locked");
+      onAccessRequired(error);
+      return;
+    }
+    setStatus("offline");
+  }
+
+  async function decodedState(remote) {
+    if (remote?.encryptedState) {
+      if (!codec) {
+        const error = new Error("Esta lista está protegida con contraseña");
+        error.code = "SHARED_PASSWORD_REQUIRED";
+        throw error;
+      }
+      return codec.decrypt(remote.encryptedState);
+    }
+    return remote?.state || null;
+  }
+
   async function readRemote({ initial = false } = {}) {
     const response = await fetchImpl(endpoint, {
       method: "GET",
@@ -206,11 +229,12 @@ export function createFamilySync({
     });
     if (!response.ok) throw new Error(`No se puede leer la lista (${response.status})`);
     const remote = await response.json();
-    if (remote?.state) {
+    const remoteState = await decodedState(remote);
+    if (remoteState) {
       latestUpdatedAt = Math.max(latestUpdatedAt, Number(remote.updatedAt) || 0);
-      onRemoteState(remote.state, { initial, updatedBy: remote.updatedBy || "" });
+      onRemoteState(remoteState, { initial, updatedBy: remote.updatedBy || "" });
     }
-    return remote;
+    return { ...remote, state: remoteState };
   }
 
   async function writeNow(sharedState) {
@@ -221,11 +245,14 @@ export function createFamilySync({
     pendingState = null;
     setStatus("connecting");
     try {
+      const storedState = codec
+        ? { encryptedState: await codec.encrypt(nextState) }
+        : { state: nextState };
       const response = await fetchImpl(endpoint, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          state: nextState,
+          ...storedState,
           updatedAt: { ".sv": "timestamp" },
           updatedBy: deviceId,
         }),
@@ -236,7 +263,7 @@ export function createFamilySync({
       setStatus("synced");
     } catch (error) {
       pendingState = nextState;
-      setStatus("offline");
+      handleSyncError(error);
       throw error;
     } finally {
       writing = false;
@@ -254,29 +281,30 @@ export function createFamilySync({
     }, delay);
   }
 
-  function receiveEvent(event) {
+  async function receiveEvent(event) {
     try {
       const message = JSON.parse(event.data);
-      if (message.path !== "/" || !message.data?.state) {
-        readRemote().catch(() => setStatus("offline"));
+      if (message.path !== "/" || (!message.data?.state && !message.data?.encryptedState)) {
+        readRemote().catch(handleSyncError);
         return;
       }
       const remote = message.data;
       const updatedAt = Number(remote.updatedAt) || 0;
       if (remote.updatedBy === deviceId || (updatedAt && updatedAt <= latestUpdatedAt)) return;
       latestUpdatedAt = Math.max(latestUpdatedAt, updatedAt);
-      onRemoteState(remote.state, { initial: false, updatedBy: remote.updatedBy || "" });
+      const remoteState = await decodedState(remote);
+      onRemoteState(remoteState, { initial: false, updatedBy: remote.updatedBy || "" });
       setStatus("synced");
-    } catch {
-      setStatus("offline");
+    } catch (error) {
+      handleSyncError(error);
     }
   }
 
   function subscribe() {
     if (!EventSourceImpl || stopped || source) return;
     source = new EventSourceImpl(endpoint);
-    source.addEventListener("put", receiveEvent);
-    source.addEventListener("patch", () => readRemote().catch(() => setStatus("offline")));
+    source.addEventListener("put", (event) => receiveEvent(event));
+    source.addEventListener("patch", () => readRemote().catch(handleSyncError));
     source.addEventListener("open", () => setStatus("synced"));
     source.addEventListener("cancel", () => setStatus("offline"));
     source.addEventListener("auth_revoked", () => setStatus("offline"));
@@ -289,8 +317,8 @@ export function createFamilySync({
       const remote = await readRemote({ initial: true });
       if (!remote?.state) await writeNow(localState);
       else setStatus("synced");
-    } catch {
-      setStatus("offline");
+    } catch (error) {
+      handleSyncError(error);
     }
     subscribe();
   }
@@ -300,8 +328,8 @@ export function createFamilySync({
       await readRemote();
       setStatus("synced");
       if (pendingState) await writeNow(pendingState);
-    } catch {
-      setStatus("offline");
+    } catch (error) {
+      handleSyncError(error);
     }
   }
 

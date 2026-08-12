@@ -44,4 +44,70 @@ No hace falta un Mac para registrarse. Apple recomienda completar la identidad d
 
 1. Comprueba que la Cuenta de Apple tiene autenticaciÃ³n de dos factores y datos reales actualizados.
 2. Instala o actualiza la app Apple Developer e inicia sesiÃ³n en iCloud en el iPhone.
-3. En Apple Devmxã]¸¶‰Ëkºwµç\ÙpìXHH[Y[›ÜÈØ\˜Xİ\™\ËÛO‚ˆO‘[YÙHÚ]Ğ\[ˆHÚ˜HHÛÛ\\\‹ÛO‚ˆO‘[°ëXHHÛÛ˜\ÙpìXH[ˆ[ˆY[œØZ™HÙ\\˜YËÛO‚ˆÛÛ‚ˆÛÛXİÏÚ‚ˆ”YY\ÈÛÛ][šXØ\ˆ[˜H[˜ÚY[˜ÚXHÈ[˜HÛÛXÚ]YHš]˜XÚYY[ˆ[H™YHšÎ‹ËÙÚ]X‹˜ÛÛKØØ\›ÜÙØ\˜]KÛKXÛÛ\˜KÚ\ÜİY\È˜Ø[˜[HÛÜÜHHHÛÛ\˜OØO‹ˆ›ÈX›\]Y\ÈÛÛ˜\ÙpìX\ÈšH[›XÙ\È˜[Z[X\™\ÈÛÛ\]ÜËÜ‚ˆH™YHœš]˜XŞKš[“Y\ˆHÛ0ë]XØHHš]˜XÚYYØOÜ‚ˆÛXZ[‚ˆØ›ÙO‚Ú[‚
+3. En Apple Developer, abre **Account > Enroll Now**.
+4. Decide el tipo de alta antes de continuar:
+   - **Individual:** el nombre legal de la persona aparece pÃºblicamente como vendedor.
+   - **OrganizaciÃ³n:** aparece la razÃ³n social, pero Apple solicita entidad legal, web pÃºblica, autoridad de firma y nÃºmero D-U-N-S.
+5. Completa tÃº mismo la fotografÃ­a del documento de identidad, la aceptaciÃ³n del contrato y la suscripciÃ³n anual.
+
+Apple indica una cuota anual de 99 USD o su equivalente local. La compra se renueva automÃ¡ticamente si el alta se realiza desde la app. Referencia: [alta y verificaciÃ³n con Apple Developer](https://developer.apple.com/help/account/membership/enrolling-in-the-app/).
+
+## Compilar en un Mac, solo si alguna vez se dispone de uno
+
+Desde la raÃ­z del proyecto:
+
+```bash
+pnpm install --frozen-lockfile
+pnpm check
+pnpm ios:sync
+pnpm ios:open
+```
+
+En Xcode:
+
+1. Selecciona el proyecto **App** y el destino **App**.
+2. En **Signing & Capabilities**, activa la firma automÃ¡tica y elige tu equipo Apple Developer.
+3. Confirma que el Bundle Identifier sea `com.carlosgarau.lacompra`. Si ya estuviera ocupado en tu cuenta, cambia el identificador tanto en Xcode como en `capacitor.config.json`.
+4. Conecta un iPhone y comprueba voz, notificaciones, compartir por WhatsApp, desbloqueo con contraseÃ±a y actualizaciÃ³n entre dos dispositivos.
+5. Selecciona **Any iOS Device (arm64)** y usa **Product > Archive**.
+6. En Organizer, ejecuta **Validate App** y despuÃ©s **Distribute App > App Store Connect > Upload**.
+
+## Crear la ficha en App Store Connect
+
+- Plataforma: iOS.
+- Nombre pÃºblico: Â¿QuÃ© te falta?
+- Idioma principal: EspaÃ±ol (EspaÃ±a).
+- Bundle ID: el mismo que en Xcode.
+- SKU sugerido: `LA-COMPRA-IOS-001`.
+- Acceso de usuarios: completo.
+- Precio inicial propuesto: gratis.
+- No requiere usuario de demostraciÃ³n porque no existe inicio de sesiÃ³n.
+
+Apple permite que una aplicaciÃ³n sin funciones importantes ligadas a una cuenta se use sin inicio de sesiÃ³n. Si mÃ¡s adelante se aÃ±ade Â«Acceder con GoogleÂ», habrÃ¡ que ofrecer tambiÃ©n una opciÃ³n equivalente que cumpla la regla 4.8 â€”normalmente Â«Iniciar sesiÃ³n con AppleÂ»â€” y permitir eliminar la cuenta desde la aplicaciÃ³n. Consulta las [App Review Guidelines](https://developer.apple.com/app-store/review/guidelines/).
+
+## Privacidad y cifrado
+
+En App Store Connect, indica:
+
+- Seguimiento: no.
+- Datos vinculados a la identidad: no.
+- Otros contenidos del usuario: sÃ­, solo cuando se activa una lista compartida; finalidad Â«Funcionalidad de la appÂ».
+- Historial de compras: sÃ­, solo cuando se activa una lista compartida; finalidades Â«PersonalizaciÃ³n del productoÂ» y Â«Funcionalidad de la appÂ».
+- Identificador del dispositivo: identificador aleatorio de la instalaciÃ³n, no vinculado; finalidad Â«Funcionalidad de la appÂ».
+- Publicidad, analÃ­tica, contactos, ubicaciÃ³n y correo electrÃ³nico: no.
+
+La etiqueta de privacidad se publicÃ³ en App Store Connect el 12 de agosto de 2026. La app se configurÃ³ como gratuita, pÃºblica y disponible al publicarse en 175 paÃ­ses o regiones, con EspaÃ±a como regiÃ³n base.
+
+La aplicaciÃ³n usa AES-GCM mediante Web Crypto y HTTPS, tecnologÃ­as estÃ¡ndar proporcionadas por el sistema. `ITSAppUsesNonExemptEncryption` estÃ¡ configurado como `NO` al considerarse cifrado exento de documentaciÃ³n. Hay que confirmar esta respuesta en el cuestionario de exportaciÃ³n de App Store Connect, especialmente si cambia la implementaciÃ³n o la disponibilidad por paÃ­ses. Referencias: [declaraciÃ³n de cifrado](https://developer.apple.com/documentation/Security/complying-with-encryption-export-regulations) y [privacidad de la app](https://developer.apple.com/help/app-store-connect/manage-app-information/manage-app-privacy).
+
+## Comprobaciones antes de enviar
+
+- Ejecutar `pnpm check` sin errores.
+- Probar la compilaciÃ³n Release en un iPhone fÃ­sico.
+- Confirmar que la contraseÃ±a nunca aparece en el enlace compartido.
+- Verificar sincronizaciÃ³n entre dos instalaciones con la misma contraseÃ±a.
+- Denegar micrÃ³fono y notificaciones y comprobar que la app sigue siendo utilizable por teclado.
+- Confirmar que Â«Borrar lista e historialÂ» y Â«Eliminar listaÂ» eliminan tambiÃ©n las copias compartidas correspondientes.
+- Revisar los textos de permisos y la polÃ­tica publicada.
+- Completar edad, categorÃ­a, derechos de contenido, DSA y disponibilidad en App Store Connect.
+- Subir las capturas, seleccionar la compilaciÃ³n y enviar manualmente a App Review.

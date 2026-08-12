@@ -18,7 +18,7 @@ import {
   registerPurchase,
   registerRequest,
   shoppingSummary,
-} from "./core.mjs?v=16";
+} from "./core.mjs?v=17";
 import {
   createFamilyId,
   createFamilySync,
@@ -37,10 +37,17 @@ import {
   normalizeFamilyId,
   sharedStateFrom,
   sharedListIdFromUrl,
-} from "./family-sync.mjs?v=16";
+} from "./family-sync.mjs?v=17";
+import {
+  createSharedPasswordCodec,
+  validateSharedPassword,
+} from "./secure-sharing.mjs?v=17";
 
 const STORAGE_KEY = "la-compra-state-v1";
 const DATABASE_URL = "https://la-compra-familiar-default-rtdb.europe-west1.firebasedatabase.app";
+const SHARE_BASE_URL = "https://carlosgarau.github.io/la-compra/";
+const NATIVE = globalThis.LaCompraNative || {};
+const SHARED_PASSWORD_STORAGE_PREFIX = "la-compra-shared-password-v1:";
 const ICONS = {
   leaf: '<path d="M19 4C11 4 5 8 5 14c0 3 2 5 5 5 6 0 9-7 9-15Z"/><path d="M5 20c2-5 5-8 10-11"/>',
   fish: '<path d="M4 12c3-5 8-6 13-3l3-3v12l-3-3c-5 3-10 2-13-3Z"/><circle cx="13.5" cy="10.5" r=".7"/>',
@@ -82,6 +89,9 @@ let expirationAlertQueue = [];
 let currentExpirationAlert = null;
 let recognition = null;
 let toastTimer = null;
+let nativeNotificationTimer = null;
+let sharedPasswordPrompt = null;
+const unlockingShareIds = new Set();
 
 function loadState() {
   try {
@@ -143,6 +153,7 @@ function rememberFamilyId() {
 function saveState({ sync = true } = {}) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   if (sync && familySync) familySync.schedule(sharedStateFrom(state));
+  scheduleNativeExpirationNotifications();
 }
 
 function cleanListName(value, fallback = "Lista especial") {
@@ -240,6 +251,140 @@ function showToast(message) {
   toastTimer = setTimeout(() => toast.classList.remove("visible"), 2600);
 }
 
+function impact(style = "light") {
+  if (NATIVE.isNative && NATIVE.impact) {
+    NATIVE.impact(style).catch(() => {});
+    return;
+  }
+  navigator.vibrate?.(style === "medium" ? 35 : 20);
+}
+
+async function shareOrCopy(shareData, copiedMessage, promptLabel) {
+  if (NATIVE.isNative && NATIVE.share) {
+    await NATIVE.share(shareData);
+    return;
+  }
+  if (navigator.share) {
+    await navigator.share(shareData);
+  } else if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(shareData.url);
+    showToast(copiedMessage);
+  } else {
+    window.prompt(promptLabel, shareData.url);
+  }
+}
+
+function sharedPasswordStorageKey(shareId) {
+  return `${SHARED_PASSWORD_STORAGE_PREFIX}${normalizeFamilyId(shareId)}`;
+}
+
+function storedSharedPassword(shareId) {
+  const id = normalizeFamilyId(shareId);
+  if (!id) return "";
+  try {
+    return localStorage.getItem(sharedPasswordStorageKey(id)) || "";
+  } catch {
+    return "";
+  }
+}
+
+function rememberSharedPassword(shareId, password) {
+  localStorage.setItem(sharedPasswordStorageKey(shareId), validateSharedPassword(password));
+}
+
+function forgetSharedPassword(shareId) {
+  try {
+    localStorage.removeItem(sharedPasswordStorageKey(shareId));
+  } catch {}
+}
+
+function passwordCodecFor(shareId) {
+  const password = storedSharedPassword(shareId);
+  if (!password) return null;
+  try {
+    return createSharedPasswordCodec(password);
+  } catch {
+    forgetSharedPassword(shareId);
+    return null;
+  }
+}
+
+function askForSharedPassword({ mode = "unlock", name = "la lista", wrong = false } = {}) {
+  if (sharedPasswordPrompt) return sharedPasswordPrompt.promise;
+  const dialog = $("#sharedPasswordDialog");
+  const creating = mode === "create";
+  $("#sharedPasswordTitle").textContent = creating ? `Protege ${name}` : `Abre ${name}`;
+  $("#sharedPasswordText").textContent = wrong
+    ? "Esa contraseña no abre la lista. Compruébala y vuelve a intentarlo."
+    : creating
+      ? "El enlace se puede enviar por WhatsApp, pero la contraseña debes comunicarla aparte."
+      : "Introduce la contraseña que te ha enviado la persona que comparte la lista.";
+  $("#sharedPasswordConfirmField").hidden = !creating;
+  $("#sharedPasswordSave").textContent = creating ? "Proteger y compartir" : "Abrir lista";
+  $("#sharedPasswordInput").value = "";
+  $("#sharedPasswordConfirm").value = "";
+
+  let resolvePrompt;
+  let rejectPrompt;
+  const promise = new Promise((resolve, reject) => {
+    resolvePrompt = resolve;
+    rejectPrompt = reject;
+  });
+  sharedPasswordPrompt = { mode, promise, resolve: resolvePrompt, reject: rejectPrompt };
+  dialog.showModal();
+  setTimeout(() => $("#sharedPasswordInput").focus(), 50);
+  return promise;
+}
+
+function submitSharedPassword(event) {
+  event.preventDefault();
+  if (!sharedPasswordPrompt) return;
+  const input = $("#sharedPasswordInput");
+  const confirmation = $("#sharedPasswordConfirm");
+  let password;
+  try {
+    password = validateSharedPassword(input.value);
+  } catch (error) {
+    input.setCustomValidity(error.message);
+    input.reportValidity();
+    input.setCustomValidity("");
+    return;
+  }
+  if (sharedPasswordPrompt.mode === "create" && password !== confirmation.value.normalize("NFC")) {
+    confirmation.setCustomValidity("Las dos contraseñas no coinciden");
+    confirmation.reportValidity();
+    confirmation.setCustomValidity("");
+    return;
+  }
+  const prompt = sharedPasswordPrompt;
+  sharedPasswordPrompt = null;
+  $("#sharedPasswordDialog").close();
+  prompt.resolve(password);
+}
+
+function cancelSharedPassword() {
+  if (!sharedPasswordPrompt) return;
+  const prompt = sharedPasswordPrompt;
+  sharedPasswordPrompt = null;
+  $("#sharedPasswordDialog").close();
+  prompt.reject(new DOMException("Acción cancelada", "AbortError"));
+}
+
+function requestSharedAccess(error, { shareId, name, restart }) {
+  const id = normalizeFamilyId(shareId);
+  if (!id || unlockingShareIds.has(id)) return;
+  if (error?.code === "WRONG_SHARED_PASSWORD") forgetSharedPassword(id);
+  unlockingShareIds.add(id);
+  askForSharedPassword({ mode: "unlock", name, wrong: error?.code === "WRONG_SHARED_PASSWORD" })
+    .then(async (password) => {
+      rememberSharedPassword(id, password);
+      unlockingShareIds.delete(id);
+      await restart();
+    })
+    .catch(() => showToast(`${name} sigue protegida`))
+    .finally(() => unlockingShareIds.delete(id));
+}
+
 function renderFamilySharing() {
   const status = $("#familyStatus");
   const shareButton = $("#familyShareButton");
@@ -253,12 +398,17 @@ function renderFamilySharing() {
     synced: "Compartida y sincronizada entre los dos móviles.",
     offline: "Sin conexión. Los cambios se sincronizarán cuando vuelva Internet.",
   };
+  copy.locked = "La lista está protegida. Introduce la contraseña para sincronizarla.";
   status.textContent = copy[familyStatus] || copy.local;
-  shareButton.textContent = familyId ? "Compartir enlace familiar" : "Crear lista compartida";
+  shareButton.textContent = familyStatus === "locked"
+    ? "Introducir contraseña"
+    : familyId ? "Compartir enlace familiar" : "Crear lista compartida";
   disconnectButton.hidden = !familyId;
   badge.hidden = !familyId;
   badge.className = `family-badge ${familyStatus}`;
-  badge.textContent = familyStatus === "synced" ? "Compartida" : familyStatus === "offline" ? "Sin conexión" : "Conectando";
+  badge.textContent = familyStatus === "synced"
+    ? "Compartida"
+    : familyStatus === "offline" ? "Sin conexión" : familyStatus === "locked" ? "Protegida" : "Conectando";
 }
 
 function setFamilyStatus(status) {
@@ -277,6 +427,16 @@ async function initializeSpecialListSync(list) {
     databaseUrl: DATABASE_URL,
     listId: shareId,
     deviceId,
+    codec: passwordCodecFor(shareId),
+    onAccessRequired: (error) => requestSharedAccess(error, {
+      shareId,
+      name: specialListById(list.id)?.name || "la lista compartida",
+      restart: () => restartSpecialListSync(list.id),
+    }),
+    onStatus: (status) => {
+      const entry = sharedSyncEntry(list.id);
+      if (entry) entry.status = status;
+    },
     onRemoteState: (remoteState, { initial = false } = {}) => {
       const currentList = specialListById(list.id);
       if (!currentList || normalizeFamilyId(currentList.shareId) !== shareId) return;
@@ -288,8 +448,15 @@ async function initializeSpecialListSync(list) {
       if (!initial) showToast(`${currentList.name} se ha actualizado`);
     },
   });
-  sharedListSyncs.set(list.id, { shareId, sync });
+  sharedListSyncs.set(list.id, { shareId, sync, status: "connecting" });
   await sync.start(sharedListPayload(list));
+}
+
+async function restartSpecialListSync(listId) {
+  sharedSyncEntry(listId)?.sync.stop();
+  sharedListSyncs.delete(listId);
+  const list = specialListById(listId);
+  if (list) await initializeSpecialListSync(list);
 }
 
 function initializeAllSharedListSyncs() {
@@ -316,6 +483,16 @@ async function initializeStandaloneListSharing() {
     databaseUrl: DATABASE_URL,
     listId: standaloneListId,
     deviceId,
+    codec: passwordCodecFor(standaloneListId),
+    onAccessRequired: (error) => requestSharedAccess(error, {
+      shareId: standaloneListId,
+      name: standaloneList?.name || "la lista compartida",
+      restart: restartStandaloneListSync,
+    }),
+    onStatus: (status) => {
+      const entry = sharedSyncEntry("standalone");
+      if (entry) entry.status = status;
+    },
     onRemoteState: (remoteState, { initial = false } = {}) => {
       standaloneList = {
         id: "standalone",
@@ -325,8 +502,14 @@ async function initializeStandaloneListSharing() {
       if (!initial) showToast(`${standaloneList.name} se ha actualizado`);
     },
   });
-  sharedListSyncs.set("standalone", { shareId: standaloneListId, sync });
+  sharedListSyncs.set("standalone", { shareId: standaloneListId, sync, status: "connecting" });
   await sync.start(sharedListPayload(standaloneList));
+}
+
+async function restartStandaloneListSync() {
+  sharedSyncEntry("standalone")?.sync.stop();
+  sharedListSyncs.delete("standalone");
+  await initializeStandaloneListSharing();
 }
 
 function hasFamilyData(candidate) {
@@ -368,6 +551,12 @@ async function initializeFamilySharing() {
     databaseUrl: DATABASE_URL,
     familyId,
     deviceId,
+    codec: passwordCodecFor(familyId),
+    onAccessRequired: (error) => requestSharedAccess(error, {
+      shareId: familyId,
+      name: "la lista familiar",
+      restart: initializeFamilySharing,
+    }),
     onRemoteState: applyRemoteFamilyState,
     onStatus: setFamilyStatus,
   });
@@ -376,28 +565,32 @@ async function initializeFamilySharing() {
 }
 
 async function shareFamilyLink() {
-  if (!familyId) {
-    familyId = createFamilyId();
-    storeFamilyAccess(familyId);
-    initializeFamilySharing().catch(() => setFamilyStatus("offline"));
-    familySync?.writeNow(sharedStateFrom(state)).catch(() => {});
+  const isNewFamily = !familyId;
+  if (isNewFamily) familyId = createFamilyId();
+  if (!storedSharedPassword(familyId)) {
+    try {
+      const password = await askForSharedPassword({
+        mode: familyStatus === "locked" ? "unlock" : "create",
+        name: "la lista familiar",
+      });
+      rememberSharedPassword(familyId, password);
+    } catch (error) {
+      if (isNewFamily) familyId = "";
+      throw error;
+    }
   }
   storeFamilyAccess(familyId);
-  const url = makeFamilyShareUrl(window.location.href, familyId);
+  await initializeFamilySharing();
+  if (familyStatus === "locked") throw new Error("La contraseña no abre la lista familiar");
+  await familySync?.writeNow(sharedStateFrom(state));
+  const url = makeFamilyShareUrl(SHARE_BASE_URL, familyId);
   const shareData = {
     title: "Nuestra lista de la compra",
-    text: "Abre este enlace una vez para compartir y actualizar nuestra lista de la compra.",
+    text: "Abre este enlace para compartir y actualizar nuestra lista de la compra. Te enviaré la contraseña aparte.",
     url,
   };
   try {
-    if (navigator.share) {
-      await navigator.share(shareData);
-    } else if (navigator.clipboard?.writeText) {
-      await navigator.clipboard.writeText(url);
-      showToast("Enlace familiar copiado");
-    } else {
-      window.prompt("Copia y comparte este enlace", url);
-    }
+    await shareOrCopy(shareData, "Enlace familiar copiado", "Copia y comparte este enlace");
   } catch (error) {
     if (error?.name !== "AbortError") showToast("No he podido compartir el enlace");
   }
@@ -407,6 +600,7 @@ function disconnectFamily() {
   if (!confirm("¿Dejar de compartir esta lista en este móvil? Conservarás una copia de lo que hay ahora.")) return;
   familySync?.stop();
   familySync = null;
+  forgetSharedPassword(familyId);
   familyId = "";
   clearFamilyAccess();
   setFamilyStatus("local");
@@ -476,6 +670,7 @@ function deleteSpecialList() {
   render();
   showToast(`${list.name} eliminada`);
   if (shareId) {
+    forgetSharedPassword(shareId);
     fetch(`${DATABASE_URL}/sharedLists/${shareId}.json`, { method: "DELETE" }).catch(() => {});
   }
 }
@@ -484,27 +679,30 @@ async function shareSpecialList() {
   const list = specialListById(activeListId);
   if (!list) return;
   if (!normalizeFamilyId(list.shareId)) {
-    list.shareId = createFamilyId();
+    const shareId = createFamilyId();
+    const password = await askForSharedPassword({ mode: "create", name: list.name });
+    list.shareId = shareId;
+    rememberSharedPassword(shareId, password);
     saveState();
-    initializeSpecialListSync(list).catch(() => {});
-    sharedSyncEntry(list.id)?.sync.writeNow(sharedListPayload(list)).catch(() => {});
   }
+  if (!storedSharedPassword(list.shareId)) {
+    const mode = sharedSyncEntry(list.id)?.status === "locked" ? "unlock" : "create";
+    const password = await askForSharedPassword({ mode, name: list.name });
+    rememberSharedPassword(list.shareId, password);
+  }
+  await restartSpecialListSync(list.id);
+  const entry = sharedSyncEntry(list.id);
+  if (entry?.status === "locked") throw new Error("La contraseña no abre esta lista");
+  await entry?.sync.writeNow(sharedListPayload(list));
 
-  const url = makeSharedListUrl(window.location.href, list.shareId);
+  const url = makeSharedListUrl(SHARE_BASE_URL, list.shareId);
   const shareData = {
     title: `Lista ${list.name}`,
-    text: `Puedes ver y actualizar únicamente la lista “${list.name}” desde este enlace.`,
+    text: `Puedes ver y actualizar únicamente la lista “${list.name}” desde este enlace. Te enviaré la contraseña aparte.`,
     url,
   };
   try {
-    if (navigator.share) {
-      await navigator.share(shareData);
-    } else if (navigator.clipboard?.writeText) {
-      await navigator.clipboard.writeText(url);
-      showToast(`Enlace de ${list.name} copiado`);
-    } else {
-      window.prompt(`Copia y comparte la lista ${list.name}`, url);
-    }
+    await shareOrCopy(shareData, `Enlace de ${list.name} copiado`, `Copia y comparte la lista ${list.name}`);
   } catch (error) {
     if (error?.name !== "AbortError") showToast("No he podido compartir esta lista");
   }
@@ -955,7 +1153,52 @@ function selectExpirationQuickDate(event) {
   updateExpirationQuickDates();
 }
 
+function nativeExpirationNotificationEntries() {
+  const entries = [];
+  state.expirations
+    .filter((entry) => entry && !entry.consumedAt && entry.expiresOn)
+    .forEach((entry) => {
+      [3, 1].forEach((threshold) => {
+        const at = new Date(`${entry.expiresOn}T09:00:00`);
+        if (Number.isNaN(at.getTime())) return;
+        at.setDate(at.getDate() - threshold);
+        const freeze = threshold === 1 && isFreezable(entry)
+          ? " Si aún lo tenéis, conviene congelarlo hoy."
+          : "";
+        entries.push({
+          id: `${entry.id}-${threshold}`,
+          expirationId: entry.id,
+          threshold,
+          title: "Caducidad próxima",
+          body: threshold === 3
+            ? `${entry.name} caduca en tres días. ¿Ya lo habéis consumido?`
+            : `${entry.name} caduca mañana. ¿Ya lo habéis consumido?${freeze}`,
+          at: at.toISOString(),
+        });
+      });
+    });
+  return entries;
+}
+
+function scheduleNativeExpirationNotifications(delay = 250) {
+  if (!NATIVE.isNative || !NATIVE.replaceExpirationNotifications) return;
+  clearTimeout(nativeNotificationTimer);
+  nativeNotificationTimer = setTimeout(() => {
+    NATIVE.replaceExpirationNotifications(nativeExpirationNotificationEntries()).catch(() => {});
+  }, delay);
+}
+
 async function requestNotificationPermission() {
+  if (NATIVE.isNative && NATIVE.requestNotificationPermission) {
+    try {
+      const granted = await NATIVE.requestNotificationPermission();
+      if (granted) scheduleNativeExpirationNotifications(0);
+      else showToast("Te avisaré al abrir La compra");
+    } catch {
+      showToast("Te avisaré al abrir La compra");
+    }
+    return;
+  }
   if (!("Notification" in window) || Notification.permission !== "default") return;
   try {
     const permission = await Notification.requestPermission();
@@ -1011,6 +1254,7 @@ function eatenPronoun(entry) {
 }
 
 async function showExpirationNotification(entry) {
+  if (NATIVE.isNative) return;
   if (!("Notification" in window) || Notification.permission !== "granted") return;
   const freeze = entry.threshold === 1 && isFreezable(entry) ? " Si no, conviene congelarlo hoy." : "";
   const body = `${entry.name} ${alertTimingText(entry)}. ¿Ya te ${eatenPronoun(entry)} has comido?${freeze}`;
@@ -1127,7 +1371,64 @@ function handleLaunchCommand() {
   }, 300);
 }
 
+function finishNativeVoice(text = "", error = null) {
+  if (!recognition?.native) return;
+  recognition = null;
+  document.body.classList.remove("listening");
+  $("#voiceTitle").textContent = "¿Qué hace falta?";
+  $("#voiceHint").textContent = "Toca el micrófono y di “leche, pan y dos kilos de patatas”.";
+  if (error) {
+    showToast(error.code === "not-allowed"
+      ? "Necesito permiso para usar el micrófono"
+      : error.message || "No he podido entenderte. Prueba otra vez.");
+  } else if (text.trim()) {
+    handleVoiceText(text.trim());
+  }
+  setTimeout(() => { $("#liveTranscript").textContent = ""; }, 3500);
+}
+
+function handleNativeLaunchUrl(value) {
+  let url;
+  try {
+    url = new URL(value);
+  } catch {
+    return;
+  }
+  const command = url.searchParams.get("command");
+  const directAdd = url.searchParams.get("add");
+  if (!command && !directAdd) return;
+  const spoken = command || `agrega ${directAdd}`;
+  navigate("list");
+  $("#liveTranscript").textContent = spoken;
+  setTimeout(() => {
+    handleVoiceText(spoken, { listId: "main" });
+    setTimeout(() => { $("#liveTranscript").textContent = ""; }, 3000);
+  }, 150);
+}
+
+function startNativeVoice() {
+  if (recognition?.native) {
+    NATIVE.stopSpeechRecognition?.().catch(() => {});
+    return;
+  }
+  recognition = { native: true };
+  document.body.classList.add("listening");
+  $("#voiceTitle").textContent = "Te escucho.";
+  $("#voiceHint").textContent = "Puedes decir varios productos seguidos.";
+  $("#liveTranscript").textContent = "";
+  impact("medium");
+  NATIVE.startSpeechRecognition({
+    onPartial: (text) => { $("#liveTranscript").textContent = text; },
+    onStopped: (text) => finishNativeVoice(text),
+    onError: (error) => finishNativeVoice("", error),
+  }).catch((error) => finishNativeVoice("", error));
+}
+
 function startVoice() {
+  if (NATIVE.isNative && NATIVE.startSpeechRecognition) {
+    startNativeVoice();
+    return;
+  }
   const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!Recognition) {
     showToast("Este navegador no permite dictado directo. Usa Safari actualizado o escribe debajo.");
@@ -1148,7 +1449,7 @@ function startVoice() {
   $("#voiceTitle").textContent = "Te escucho…";
   $("#voiceHint").textContent = "Puedes decir varios productos seguidos.";
   $("#liveTranscript").textContent = "";
-  navigator.vibrate?.(35);
+  impact("medium");
 
   recognition.onresult = (event) => {
     let interim = "";
@@ -1223,11 +1524,19 @@ $("#addForm").addEventListener("submit", (event) => {
 });
 $("#manualExpirationForm").addEventListener("submit", saveManualExpiration);
 $("#specialListForm").addEventListener("submit", saveSpecialList);
+$("#sharedPasswordForm").addEventListener("submit", submitSharedPassword);
+$("#sharedPasswordCancel").addEventListener("click", cancelSharedPassword);
+$("#sharedPasswordDialog").addEventListener("cancel", (event) => {
+  event.preventDefault();
+  cancelSharedPassword();
+});
 
 $("#micButton").addEventListener("click", startVoice);
 $("#specialListCreate").addEventListener("click", () => openSpecialListDialog());
 $("#specialListRename").addEventListener("click", () => openSpecialListDialog(activeListId));
-$("#specialListShare").addEventListener("click", shareSpecialList);
+$("#specialListShare").addEventListener("click", () => shareSpecialList().catch((error) => {
+  if (error?.name !== "AbortError") showToast(error?.message || "No he podido compartir esta lista");
+}));
 $("#specialListDelete").addEventListener("click", deleteSpecialList);
 $("#specialListCancel").addEventListener("click", () => $("#specialListDialog").close());
 $("#shoppingStart").addEventListener("click", enterShoppingMode);
@@ -1265,7 +1574,7 @@ document.addEventListener("click", (event) => {
     if (action === "remove") replaceListItems(activeListId, items.filter((entry) => entry.id !== item.id));
     persistList();
     render();
-    navigator.vibrate?.(20);
+    impact("light");
   }
 
   const suggestion = event.target.closest("[data-suggest-key]");
@@ -1287,7 +1596,9 @@ $("#speakToggle").addEventListener("change", (event) => {
   state.settings.speak = event.target.checked;
   saveState();
 });
-$("#familyShareButton").addEventListener("click", shareFamilyLink);
+$("#familyShareButton").addEventListener("click", () => shareFamilyLink().catch((error) => {
+  if (error?.name !== "AbortError") showToast(error?.message || "No he podido compartir el enlace");
+}));
 $("#familyDisconnectButton").addEventListener("click", disconnectFamily);
 $("#exportButton").addEventListener("click", exportData);
 $("#importInput").addEventListener("change", (event) => event.target.files[0] && importData(event.target.files[0]));
@@ -1303,8 +1614,9 @@ $("#clearButton").addEventListener("click", () => {
 window.addEventListener("beforeinstallprompt", (event) => event.preventDefault());
 
 async function initializeAppUpdates() {
+  if (NATIVE.isNative) return;
   if (!("serviceWorker" in navigator)) return;
-  serviceWorkerRegistration = await navigator.serviceWorker.register("./service-worker.js?v=16");
+  serviceWorkerRegistration = await navigator.serviceWorker.register("./service-worker.js?v=17");
   serviceWorkerRegistration.update().catch(() => {});
 }
 
@@ -1330,12 +1642,26 @@ document.addEventListener("visibilitychange", () => {
     if (!standaloneListId) checkExpirationAlerts();
   }
 });
+document.addEventListener("la-compra:native-active", () => {
+  refreshSharedData();
+  scheduleNativeExpirationNotifications(0);
+  if (!standaloneListId) checkExpirationAlerts();
+});
+document.addEventListener("la-compra:notification-opened", () => {
+  if (standaloneListId) return;
+  navigate("expiration");
+  checkExpirationAlerts();
+});
+document.addEventListener("la-compra:app-url-open", (event) => {
+  handleNativeLaunchUrl(event.detail?.url);
+});
 
 async function bootstrap() {
   render();
   if (standaloneListId) await initializeStandaloneListSharing();
   else await initializeFamilySharing();
   handleLaunchCommand();
+  scheduleNativeExpirationNotifications(0);
   if (!standaloneListId) setTimeout(checkExpirationAlerts, 500);
 }
 

@@ -1,5 +1,5 @@
-const CACHE = "la-compra-v16";
-const ASSETS = ["./", "./index.html", "./styles.css?v=16", "./app.mjs?v=16", "./core.mjs?v=16", "./family-sync.mjs?v=16", "./icon.svg", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png", "./manifest.webmanifest?v=16"];
+const CACHE = "la-compra-v17";
+const ASSETS = ["./", "./index.html", "./styles.css?v=17", "./app.mjs?v=17", "./core.mjs?v=17", "./family-sync.mjs?v=17", "./secure-sharing.mjs?v=17", "./icon.svg", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png", "./manifest.webmanifest?v=17"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(ASSETS)));

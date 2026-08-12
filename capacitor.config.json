@@ -1,0 +1,22 @@
+{
+  "appId": "com.carlosgarau.lacompra",
+  "appName": "La compra",
+  "webDir": "www",
+  "backgroundColor": "#f7f4ec",
+  "ios": {
+    "contentInset": "always",
+    "preferredContentMode": "mobile",
+    "scrollEnabled": true
+  },
+  "plugins": {
+    "LocalNotifications": {
+      "presentationOptions": ["badge", "sound", "banner", "list"]
+    },
+    "SplashScreen": {
+      "launchAutoHide": true,
+      "launchShowDuration": 900,
+      "backgroundColor": "#f7f4ec",
+      "showSpinner": false
+    }
+  }
+}
