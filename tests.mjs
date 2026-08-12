@@ -39,6 +39,11 @@ import {
   sharedListIdFromUrl,
   sharedStateFrom,
 } from "./family-sync.mjs";
+import {
+  createSharedPasswordCodec,
+  isEncryptedSharedRecord,
+  validateSharedPassword,
+} from "./secure-sharing.mjs";
 
 test("separa una frase con varios productos", () => {
   const entries = parseSpokenList("Añade leche, pan y dos kilos de patatas a la lista de la compra");
@@ -285,4 +290,65 @@ test("usa una colección independiente para una lista especial compartida", () =
   });
   assert.equal(sync.endpoint, `https://example.test/sharedLists/${"x".repeat(43)}.json`);
   sync.stop();
+});
+
+test("cifra una lista compartida y la abre únicamente con su contraseña", async () => {
+  const owner = createSharedPasswordCodec("Nevera casa 2026");
+  const protectedState = await owner.encrypt({ items: [{ name: "Tomates" }] });
+  assert.equal(isEncryptedSharedRecord({ encryptedState: protectedState }), true);
+
+  const invited = createSharedPasswordCodec("Nevera casa 2026");
+  assert.deepEqual(await invited.decrypt(protectedState), { items: [{ name: "Tomates" }] });
+
+  const intruder = createSharedPasswordCodec("Otra clave distinta");
+  await assert.rejects(
+    intruder.decrypt(protectedState),
+    (error) => error.code === "WRONG_SHARED_PASSWORD",
+  );
+});
+
+test("no permite contraseñas demasiado cortas", () => {
+  assert.throws(() => validateSharedPassword("1234567"), /al menos 8 caracteres/);
+  assert.equal(validateSharedPassword("una clave segura"), "una clave segura");
+});
+
+test("sincroniza una familia cifrada sin guardar el contenido en claro", async () => {
+  let remote = null;
+  const fetchImpl = async (_url, options = {}) => {
+    if ((options.method || "GET") === "GET") {
+      return { ok: true, status: 200, json: async () => remote };
+    }
+    const body = JSON.parse(options.body);
+    remote = { ...body, updatedAt: 1234 };
+    return { ok: true, status: 200, json: async () => remote };
+  };
+  const familyId = "z".repeat(43);
+  const local = createInitialState();
+  local.items.push({ id: "1", key: "tomate", name: "Tomate", quantity: 1, checked: false });
+
+  const owner = createFamilySync({
+    databaseUrl: "https://example.test",
+    familyId,
+    deviceId: "movil-1",
+    fetchImpl,
+    EventSourceImpl: null,
+    codec: createSharedPasswordCodec("Nevera casa 2026"),
+  });
+  await owner.start(local);
+  assert.equal("state" in remote, false);
+  assert.equal(isEncryptedSharedRecord(remote), true);
+  assert.doesNotMatch(remote.encryptedState.ciphertext, /Tomate/);
+
+  let downloaded = null;
+  const invited = createFamilySync({
+    databaseUrl: "https://example.test",
+    familyId,
+    deviceId: "movil-2",
+    fetchImpl,
+    EventSourceImpl: null,
+    codec: createSharedPasswordCodec("Nevera casa 2026"),
+    onRemoteState: (next) => { downloaded = next; },
+  });
+  await invited.start(createInitialState());
+  assert.equal(downloaded.items[0].name, "Tomate");
 });
