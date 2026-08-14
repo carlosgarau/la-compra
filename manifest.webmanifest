@@ -1,7 +1,7 @@
 {
-  "name": "Â¿QuÃ© te falta?",
-  "short_name": "Â¿QuÃ© te falta?",
-  "description": "Lista familiar con voz, memoria y sugerencias Ãºtiles.",
+  "name": "¿Qué te falta?",
+  "short_name": "¿Qué te falta?",
+  "description": "Lista familiar con voz, memoria y sugerencias útiles.",
   "lang": "es",
   "start_url": "./",
   "scope": "./",
@@ -29,4 +29,3 @@
     }
   ]
 }
-
