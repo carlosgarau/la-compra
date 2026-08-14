@@ -6,13 +6,13 @@
     <meta name="theme-color" content="#f7f4ec" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-    <meta name="apple-mobile-web-app-title" content="Â¿QuÃ© te falta?" />
-    <meta name="description" content="Tu lista familiar, con voz, memoria y sugerencias Ãºtiles." />
+    <meta name="apple-mobile-web-app-title" content="¿Qué te falta?" />
+    <meta name="description" content="Tu lista familiar, con voz, memoria y sugerencias útiles." />
     <link rel="manifest" href="manifest.webmanifest?v=20" />
     <link rel="icon" href="icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="apple-touch-icon.png" />
     <link rel="stylesheet" href="styles.css?v=20" />
-    <title>Â¿QuÃ© te falta?</title>
+    <title>¿Qué te falta?</title>
   </head>
   <body>
     <div class="app-shell">
@@ -21,7 +21,7 @@
           <span class="brand-mark" aria-hidden="true">
             <svg viewBox="0 0 48 48"><path d="M14 19h20l-2 19H16l-2-19Z"/><path d="M19 21c0-8 10-8 10 0"/></svg>
           </span>
-          <span><strong>Â¿QuÃ© te falta?</strong><small id="headerSummary">Tu lista familiar</small></span>
+          <span><strong>¿Qué te falta?</strong><small id="headerSummary">Tu lista familiar</small></span>
         </button>
         <div class="topbar-actions">
           <span class="family-badge connecting" id="familyBadge" hidden>Conectando</span>
@@ -35,9 +35,9 @@
         <section class="view active" id="listView" data-view="list">
           <div class="voice-card" id="voiceCard">
             <div class="voice-copy">
-              <span class="eyebrow">DÃMELO</span>
-              <h1 id="voiceTitle">Â¿QuÃ© hace falta?</h1>
-              <p id="voiceHint">Toca el micrÃ³fono y di â€œleche, pan y dos kilos de patatasâ€.</p>
+              <span class="eyebrow">DÍMELO</span>
+              <h1 id="voiceTitle">¿Qué hace falta?</h1>
+              <p id="voiceHint">Toca el micrófono y di “leche, pan y dos kilos de patatas”.</p>
               <div class="live-transcript" id="liveTranscript" aria-live="polite"></div>
             </div>
             <button class="mic-button" id="micButton" type="button" aria-label="Hablar">
@@ -61,9 +61,9 @@
           </div>
 
           <form class="quick-add" id="addForm">
-            <label class="sr-only" for="itemInput">AÃ±adir productos</label>
-            <input id="itemInput" autocomplete="off" enterkeyhint="done" placeholder="Escribe un productoâ€¦" />
-            <button type="submit">AÃ±adir</button>
+            <label class="sr-only" for="itemInput">Añadir productos</label>
+            <input id="itemInput" autocomplete="off" enterkeyhint="done" placeholder="Escribe un producto…" />
+            <button type="submit">Añadir</button>
           </form>
 
           <section class="list-section">
@@ -85,7 +85,7 @@
           <div class="page-intro">
             <span class="eyebrow">DESPENSA Y NEVERA</span>
             <h1>Productos con caducidad <span class="count-badge" id="expirationCount">0</span></h1>
-            <p>Una lista compartida para que ninguno de los dos olvide los alimentos mÃ¡s delicados.</p>
+            <p>Una lista compartida para que ninguno de los dos olvide los alimentos más delicados.</p>
           </div>
           <form class="expiration-add-form" id="manualExpirationForm">
             <label>
@@ -96,7 +96,7 @@
               <span>Caduca el</span>
               <input id="manualExpirationDate" type="date" required />
             </label>
-            <button type="submit">AÃ±adir</button>
+            <button type="submit">Añadir</button>
           </form>
           <div id="expirationContent"></div>
         </section>
@@ -105,7 +105,7 @@
           <div class="page-intro">
             <span class="eyebrow">REPONER SIN ESCRIBIR</span>
             <h1>Comprados</h1>
-            <p>Recupera productos de compras anteriores y vuelve a aÃ±adirlos con un toque.</p>
+            <p>Recupera productos de compras anteriores y vuelve a añadirlos con un toque.</p>
           </div>
           <div id="ideasContent"></div>
         </section>
@@ -114,7 +114,7 @@
           <div class="page-intro">
             <span class="eyebrow">MEMORIA DE CASA</span>
             <h1>Historial</h1>
-            <p>AsÃ­ puedo notar cuÃ¡ndo hace demasiado que no comprÃ¡is algo.</p>
+            <p>Así puedo notar cuándo hace demasiado que no compráis algo.</p>
           </div>
           <div id="historyStats" class="stats-grid"></div>
           <div id="historyContent"></div>
@@ -126,7 +126,7 @@
         <button type="button" id="finishShopping">Terminar compra</button>
       </div>
 
-      <nav class="bottom-nav" aria-label="NavegaciÃ³n principal">
+      <nav class="bottom-nav" aria-label="Navegación principal">
         <button class="active" type="button" data-nav="list">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13"/><circle cx="3" cy="6" r="1"/><circle cx="3" cy="12" r="1"/><circle cx="3" cy="18" r="1"/></svg>
           <span>Lista</span>
@@ -151,11 +151,11 @@
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 8h11v11H8z"/><path d="M16 8V5H5v11h3"/></svg>
       </div>
       <span class="eyebrow">YA ESTABA APUNTADO</span>
-      <h2 id="duplicateTitle">Â¿Lo compramos dos veces?</h2>
+      <h2 id="duplicateTitle">¿Lo compramos dos veces?</h2>
       <p id="duplicateText"></p>
       <div class="dialog-actions">
-        <button class="primary" id="duplicateYes" type="button">SÃ­, comprar mÃ¡s</button>
-        <button class="secondary" id="duplicateNo" type="button">No, dejarlo como estÃ¡</button>
+        <button class="primary" id="duplicateYes" type="button">Sí, comprar más</button>
+        <button class="secondary" id="duplicateNo" type="button">No, dejarlo como está</button>
       </div>
     </dialog>
 
@@ -164,7 +164,7 @@
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 13 4 4L19 7"/></svg>
       </div>
       <span class="eyebrow">TODO COMPRADO</span>
-      <h2>Â¿Guardamos lo que has comprado?</h2>
+      <h2>¿Guardamos lo que has comprado?</h2>
       <p id="finishText"></p>
       <div class="dialog-actions">
         <button class="primary" id="finishConfirm" type="button">Guardar compra</button>
@@ -190,13 +190,13 @@
         </div>
       </div>
       <div class="expiration-dialog-body">
-        <h3 id="expirationDateTitle">Â¿CuÃ¡ndo caduca?</h3>
-        <p id="expirationDateHelp">Elige una opciÃ³n rÃ¡pida o abre el calendario. Te avisarÃ© 3 dÃ­as antes y de nuevo cuando falte 1.</p>
-        <div class="expiration-quick-dates" aria-label="Fechas rÃ¡pidas">
+        <h3 id="expirationDateTitle">¿Cuándo caduca?</h3>
+        <p id="expirationDateHelp">Elige una opción rápida o abre el calendario. Te avisaré 3 días antes y de nuevo cuando falte 1.</p>
+        <div class="expiration-quick-dates" aria-label="Fechas rápidas">
           <button type="button" data-expiration-offset="0">Hoy</button>
-          <button type="button" data-expiration-offset="1">MaÃ±ana</button>
-          <button type="button" data-expiration-offset="3">En 3 dÃ­as</button>
-          <button type="button" data-expiration-offset="7">En 7 dÃ­as</button>
+          <button type="button" data-expiration-offset="1">Mañana</button>
+          <button type="button" data-expiration-offset="3">En 3 días</button>
+          <button type="button" data-expiration-offset="7">En 7 días</button>
         </div>
         <label class="expiration-date-field">
           <span id="expirationDateLabel">Otra fecha exacta</span>
@@ -215,7 +215,7 @@
       </div>
       <span class="eyebrow">COMPRA EXTRA</span>
       <h2>Guardar producto y caducidad</h2>
-      <p>Lo aÃ±adirÃ© al historial aunque no estuviera en la lista.</p>
+      <p>Lo añadiré al historial aunque no estuviera en la lista.</p>
       <div class="extra-purchase-fields">
         <label>
           <span>Producto comprado</span>
@@ -236,12 +236,12 @@
       <div class="dialog-icon expiration-warning-icon">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2.8 20h18.4L12 3Z"/><path d="M12 9v5M12 17h.01"/></svg>
       </div>
-      <span class="eyebrow">CADUCIDAD PRÃ“XIMA</span>
+      <span class="eyebrow">CADUCIDAD PRÓXIMA</span>
       <h2 id="expirationAlertTitle"></h2>
       <p id="expirationAlertText"></p>
       <div class="dialog-actions">
-        <button class="primary" id="expirationConsumedYes" type="button">SÃ­, ya estÃ¡ consumido</button>
-        <button class="secondary" id="expirationConsumedNo" type="button">No, todavÃ­a</button>
+        <button class="primary" id="expirationConsumedYes" type="button">Sí, ya está consumido</button>
+        <button class="secondary" id="expirationConsumedNo" type="button">No, todavía</button>
       </div>
     </dialog>
 
@@ -251,7 +251,7 @@
       </div>
       <span class="eyebrow">LISTA PUNTUAL</span>
       <h2 id="specialListDialogTitle">Nueva lista especial</h2>
-      <p>SerÃ¡ independiente de tu lista habitual, el historial y las sugerencias.</p>
+      <p>Será independiente de tu lista habitual, el historial y las sugerencias.</p>
       <form id="specialListForm">
         <label class="special-list-name-field">
           <span>Nombre de la lista</span>
@@ -269,18 +269,18 @@
         <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3"/></svg>
       </div>
       <span class="eyebrow">LISTA PROTEGIDA</span>
-      <h2 id="sharedPasswordTitle">ContraseÃ±a de la lista</h2>
-      <p id="sharedPasswordText">La contraseÃ±a no viaja dentro del enlace.</p>
+      <h2 id="sharedPasswordTitle">Contraseña de la lista</h2>
+      <p id="sharedPasswordText">La contraseña no viaja dentro del enlace.</p>
       <form id="sharedPasswordForm">
         <label class="special-list-name-field">
-          <span>ContraseÃ±a</span>
+          <span>Contraseña</span>
           <input id="sharedPasswordInput" type="password" minlength="8" autocomplete="current-password" required />
         </label>
         <label class="special-list-name-field" id="sharedPasswordConfirmField" hidden>
-          <span>Repetir contraseÃ±a</span>
+          <span>Repetir contraseña</span>
           <input id="sharedPasswordConfirm" type="password" minlength="8" autocomplete="new-password" />
         </label>
-        <small class="password-guidance">MÃ­nimo 8 caracteres. Se recordarÃ¡ Ãºnicamente en este dispositivo.</small>
+        <small class="password-guidance">Mínimo 8 caracteres. Se recordará únicamente en este dispositivo.</small>
         <div class="dialog-actions">
           <button class="primary" id="sharedPasswordSave" type="submit">Abrir lista</button>
           <button class="secondary" id="sharedPasswordCancel" type="button">Ahora no</button>
@@ -292,31 +292,31 @@
       <div class="sheet-handle"></div>
       <div class="sheet-heading">
         <div><span class="eyebrow">PREFERENCIAS</span><h2>Ajustes</h2></div>
-        <button class="icon-button" id="settingsClose" type="button" aria-label="Cerrar">Ã—</button>
+        <button class="icon-button" id="settingsClose" type="button" aria-label="Cerrar">×</button>
       </div>
       <label class="setting-row">
-        <span><strong>Confirmaciones por voz</strong><small>La app te responde al aÃ±adir y ante repetidos.</small></span>
+        <span><strong>Confirmaciones por voz</strong><small>La app te responde al añadir y ante repetidos.</small></span>
         <input id="speakToggle" type="checkbox" role="switch" />
       </label>
       <div class="settings-group family-settings">
         <strong>Lista familiar</strong>
-        <p id="familyStatus">Esta copia solo estÃ¡ en este mÃ³vil.</p>
+        <p id="familyStatus">Esta copia solo está en este móvil.</p>
         <div class="settings-actions family-actions">
           <button class="family-share-button" id="familyShareButton" type="button">Crear lista compartida</button>
           <button id="familyDisconnectButton" type="button" hidden>Dejar de compartir</button>
         </div>
-        <small class="family-privacy">La lista se cifra con una contraseÃ±a distinta del enlace. Puedes enviar el enlace por WhatsApp y comunicar la contraseÃ±a aparte.</small>
+        <small class="family-privacy">La lista se cifra con una contraseña distinta del enlace. Puedes enviar el enlace por WhatsApp y comunicar la contraseña aparte.</small>
       </div>
       <div class="settings-group">
         <strong>Tus datos</strong>
-        <p>La app conserva una copia en este mÃ³vil. Si activas la lista familiar, tambiÃ©n la sincroniza para los dos.</p>
+        <p>La app conserva una copia en este móvil. Si activas la lista familiar, también la sincroniza para los dos.</p>
         <div class="settings-actions">
           <button id="exportButton" type="button">Exportar copia</button>
           <label class="import-button">Importar copia<input id="importInput" type="file" accept="application/json" /></label>
         </div>
       </div>
       <button class="danger-button" id="clearButton" type="button">Borrar lista e historial</button>
-      <p class="legal-links"><a href="privacy.html">PolÃ­tica de privacidad</a> Â· <a href="support.html">Ayuda y contacto</a></p>
+      <p class="legal-links"><a href="privacy.html">Política de privacidad</a> · <a href="support.html">Ayuda y contacto</a></p>
     </dialog>
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
@@ -324,4 +324,3 @@
     <script type="module" src="app.mjs?v=20"></script>
   </body>
 </html>
-
