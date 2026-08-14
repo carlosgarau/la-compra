@@ -1,8 +1,6 @@
 name: Publicar Â¿QuÃ© te falta?
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 permissions:
