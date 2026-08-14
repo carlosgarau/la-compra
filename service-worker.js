@@ -1,5 +1,5 @@
-const CACHE = "la-compra-v17";
-const ASSETS = ["./", "./index.html", "./styles.css?v=17", "./app.mjs?v=17", "./core.mjs?v=17", "./family-sync.mjs?v=17", "./secure-sharing.mjs?v=17", "./icon.svg", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png", "./manifest.webmanifest?v=17"];
+const CACHE = "que-te-falta-v20";
+const ASSETS = ["./", "./index.html", "./styles.css?v=20", "./app.mjs?v=20", "./core.mjs?v=20", "./family-sync.mjs?v=20", "./secure-sharing.mjs?v=20", "./icon.svg", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png", "./manifest.webmanifest?v=20"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(ASSETS)));
@@ -9,7 +9,7 @@ self.addEventListener("install", (event) => {
 self.addEventListener("activate", (event) => {
   event.waitUntil((async () => {
     const keys = await caches.keys();
-    const previousAppCache = keys.some((key) => key.startsWith("la-compra-v") && key !== CACHE);
+    const previousAppCache = keys.some((key) => (key.startsWith("la-compra-v") || key.startsWith("que-te-falta-v")) && key !== CACHE);
     await Promise.all(keys.filter((key) => key !== CACHE).map((key) => caches.delete(key)));
     await self.clients.claim();
     if (!previousAppCache) return;
