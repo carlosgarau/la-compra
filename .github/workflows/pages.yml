@@ -1,4 +1,4 @@
-name: Publicar Â¿QuÃ© te falta?
+name: Publicar ¿Qué te falta?
 
 on:
   workflow_dispatch:
@@ -19,17 +19,16 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
-      - name: Descargar aplicaciÃ³n
+      - name: Descargar aplicación
         uses: actions/checkout@v4
       - name: Preparar GitHub Pages
         uses: actions/configure-pages@v5
         with:
           enablement: true
-      - name: Empaquetar aplicaciÃ³n
+      - name: Empaquetar aplicación
         uses: actions/upload-pages-artifact@v3
         with:
           path: .
       - name: Publicar
         id: deployment
         uses: actions/deploy-pages@v4
-
