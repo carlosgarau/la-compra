@@ -1,14 +1,14 @@
 export const CATEGORY_ORDER = [
   "Fruta y verdura",
   "Carne y pescado",
-  "LÃ¡cteos y huevos",
-  "PanaderÃ­a y desayuno",
+  "Lácteos y huevos",
+  "Panadería y desayuno",
   "Despensa",
   "Bebidas",
   "Congelados",
   "Limpieza",
   "Higiene",
-  "BebÃ©s y niÃ±os",
+  "Bebés y niños",
   "Mascotas",
   "Otros",
 ];
@@ -16,14 +16,14 @@ export const CATEGORY_ORDER = [
 export const CATEGORY_META = {
   "Fruta y verdura": { icon: "leaf", color: "#3f7d58" },
   "Carne y pescado": { icon: "fish", color: "#c95f54" },
-  "LÃ¡cteos y huevos": { icon: "milk", color: "#5681a6" },
-  "PanaderÃ­a y desayuno": { icon: "bread", color: "#b7793f" },
+  "Lácteos y huevos": { icon: "milk", color: "#5681a6" },
+  "Panadería y desayuno": { icon: "bread", color: "#b7793f" },
   Despensa: { icon: "jar", color: "#8b6f47" },
   Bebidas: { icon: "bottle", color: "#4b87a3" },
   Congelados: { icon: "snow", color: "#6d87b5" },
   Limpieza: { icon: "sparkle", color: "#667a89" },
   Higiene: { icon: "drop", color: "#97749a" },
-  "BebÃ©s y niÃ±os": { icon: "baby", color: "#cc7f94" },
+  "Bebés y niños": { icon: "baby", color: "#cc7f94" },
   Mascotas: { icon: "paw", color: "#9a755c" },
   Otros: { icon: "basket", color: "#706c65" },
 };
@@ -31,7 +31,7 @@ export const CATEGORY_META = {
 export const PERISHABLE_CATEGORIES = new Set([
   "Fruta y verdura",
   "Carne y pescado",
-  "LÃ¡cteos y huevos",
+  "Lácteos y huevos",
 ]);
 
 const FREEZABLE_KEYWORDS = [
@@ -41,8 +41,8 @@ const FREEZABLE_KEYWORDS = [
 ];
 
 const CATEGORY_KEYWORDS = {
-  "BebÃ©s y niÃ±os": [
-    "panal", "paÃ±al", "toallita", "potito", "papilla", "leche infantil",
+  "Bebés y niños": [
+    "panal", "pañal", "toallita", "potito", "papilla", "leche infantil",
     "formula infantil", "chupete", "biberon",
   ],
   Mascotas: ["pienso", "arena de gato", "comida de perro", "comida de gato", "mascota"],
@@ -59,7 +59,7 @@ const CATEGORY_KEYWORDS = {
     "agua", "cerveza", "vino", "refresco", "zumo", "coca cola", "tonica", "sidra",
     "ginebra", "ron", "whisky", "batido",
   ],
-  "LÃ¡cteos y huevos": [
+  "Lácteos y huevos": [
     "leche", "yogur", "queso", "huevo", "mantequilla", "nata", "kefir", "requeson",
     "cuajada", "mozzarella",
   ],
@@ -68,7 +68,7 @@ const CATEGORY_KEYWORDS = {
     "salchicha", "bacon", "pescado", "salmon", "atun", "merluza", "bacalao", "gamba",
     "langostino", "calamar", "sepia", "mejillon", "sardina", "embutido",
   ],
-  "PanaderÃ­a y desayuno": [
+  "Panadería y desayuno": [
     "pan", "barra", "baguette", "croissant", "ensaimada", "galleta", "cereal", "tostada",
     "magdalena", "bizcocho", "bolleria", "mermelada",
   ],
@@ -78,7 +78,7 @@ const CATEGORY_KEYWORDS = {
     "albaricoque", "ciruela", "cereza", "uva", "kiwi", "mango", "aguacate", "higo",
     "tomate", "lechuga", "cebolla", "ajo", "patata", "zanahoria", "calabacin", "berenjena",
     "pimiento", "pepino", "brocoli", "coliflor", "espinaca", "acelga", "alcachofa",
-    "esparrago", "puerro", "judia verde", "champiÃ±on", "seta", "verdura", "fruta",
+    "esparrago", "puerro", "judia verde", "champiñon", "seta", "verdura", "fruta",
   ],
   Despensa: [
     "arroz", "pasta", "macarron", "espagueti", "harina", "azucar", "sal", "pimienta",
@@ -98,8 +98,8 @@ const ALIASES = {
   "lechugas": "lechuga", "leches": "leche", "limones": "limon", "latas de atun": "atun",
   "macarrones": "macarron", "mandarinas": "mandarina", "manzanas": "manzana",
   "melocotones": "melocoton", "naranjas": "naranja", "nectarinas": "nectarina",
-  "panales": "panal", "paÃ±ales": "panal", "patatas": "patata", "pepinos": "pepino",
-  "peras": "pera", "pimientos": "pimiento", "platanos": "platano", "plÃ¡tanos": "platano",
+  "panales": "panal", "pañales": "panal", "patatas": "patata", "pepinos": "pepino",
+  "peras": "pera", "pimientos": "pimiento", "platanos": "platano", "plátanos": "platano",
   "refrescos": "refresco", "tomates": "tomate", "toallitas": "toallita", "yogures": "yogur",
   "zanahorias": "zanahoria", "zumos": "zumo",
 };
@@ -121,23 +121,23 @@ export const SEASONAL_PRODUCE = [
   { name: "Alcachofas", key: "alcachofa", months: [1, 2, 3, 4, 11, 12] },
   { name: "Naranjas", key: "naranja", months: [1, 2, 3, 4, 11, 12] },
   { name: "Mandarinas", key: "mandarina", months: [1, 2, 3, 10, 11, 12] },
-  { name: "EspÃ¡rragos", key: "esparrago", months: [3, 4, 5] },
+  { name: "Espárragos", key: "esparrago", months: [3, 4, 5] },
   { name: "Guisantes", key: "guisante", months: [2, 3, 4, 5] },
   { name: "Cerezas", key: "cereza", months: [5, 6, 7] },
   { name: "Albaricoques", key: "albaricoque", months: [5, 6, 7] },
   { name: "Melocotones", key: "melocoton", months: [6, 7, 8, 9] },
   { name: "Nectarinas", key: "nectarina", months: [6, 7, 8, 9] },
-  { name: "SandÃ­a", key: "sandia", months: [6, 7, 8, 9] },
-  { name: "MelÃ³n", key: "melon", months: [6, 7, 8, 9] },
+  { name: "Sandía", key: "sandia", months: [6, 7, 8, 9] },
+  { name: "Melón", key: "melon", months: [6, 7, 8, 9] },
   { name: "Tomates", key: "tomate", months: [6, 7, 8, 9] },
   { name: "Pimientos", key: "pimiento", months: [6, 7, 8, 9, 10] },
-  { name: "CalabacÃ­n", key: "calabacin", months: [5, 6, 7, 8, 9] },
+  { name: "Calabacín", key: "calabacin", months: [5, 6, 7, 8, 9] },
   { name: "Higos", key: "higo", months: [7, 8, 9] },
   { name: "Uvas", key: "uva", months: [8, 9, 10, 11] },
   { name: "Granadas", key: "granada", months: [9, 10, 11] },
   { name: "Caquis", key: "caqui", months: [10, 11, 12] },
   { name: "Calabaza", key: "calabaza", months: [9, 10, 11, 12, 1, 2] },
-  { name: "BrÃ³coli", key: "brocoli", months: [1, 2, 3, 10, 11, 12] },
+  { name: "Brócoli", key: "brocoli", months: [1, 2, 3, 10, 11, 12] },
   { name: "Coliflor", key: "coliflor", months: [1, 2, 3, 11, 12] },
 ];
 
@@ -146,8 +146,8 @@ export function normalizeText(value = "") {
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
-    .replace(/[â€™']/g, "")
-    .replace(/[^a-z0-9Ã±\s]/g, " ")
+    .replace(/[’']/g, "")
+    .replace(/[^a-z0-9ñ\s]/g, " ")
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -180,7 +180,7 @@ export function categoryFor(name) {
 
 export function splitListText(value) {
   return String(value)
-    .replace(/\s+(?:ademÃ¡s|tambiÃ©n)\s+/gi, ",")
+    .replace(/\s+(?:además|también)\s+/gi, ",")
     .split(/\s*(?:,|;|\n|\s+y\s+)\s*/i)
     .map((part) => part.trim())
     .filter(Boolean);
@@ -222,7 +222,7 @@ export function parseSpokenList(value) {
   let text = String(value).trim();
   text = text
     .replace(/^(oye\s+siri[,:]?\s*)/i, "")
-    .replace(/^(aÃ±ade|agrega|apunta|anota|pon|mete|necesitamos|necesito|hace falta|hay que comprar|comprar)\s+/i, "")
+    .replace(/^(añade|agrega|apunta|anota|pon|mete|necesitamos|necesito|hace falta|hay que comprar|comprar)\s+/i, "")
     .replace(/\s+(?:a|en)\s+(?:mi\s+|la\s+)?lista\s+de\s+(?:la\s+)?compra\s*$/i, "")
     .trim();
   return splitListText(text).map(parseEntry).filter((entry) => entry.key);
@@ -288,7 +288,7 @@ export function parseExtraPurchaseCommand(value, now = Date.now()) {
   if (!/(he comprado|hemos comprado|compre)\b/.test(normalized) || !/(extra|caduc|caduq)/.test(normalized)) return null;
 
   const spoken = String(value);
-  const detailMatch = spoken.match(/(?:he|hemos)\s+comprado\s+(.+)/i) || spoken.match(/compr[eÃ©]\s+(.+)/i);
+  const detailMatch = spoken.match(/(?:he|hemos)\s+comprado\s+(.+)/i) || spoken.match(/compr[eé]\s+(.+)/i);
   let productText = detailMatch?.[1] || "";
   productText = productText
     .replace(/\b(?:que|y)\s+cadu(?:c|q)\w*.*$/i, "")
@@ -460,7 +460,7 @@ export function expirationDaysLeft(expiresOn, now = Date.now()) {
 }
 
 export function addExpiration(state, item, expiresOn, now = Date.now()) {
-  if (!Number.isFinite(localDayStamp(expiresOn))) throw new Error("Fecha de caducidad no vÃ¡lida");
+  if (!Number.isFinite(localDayStamp(expiresOn))) throw new Error("Fecha de caducidad no válida");
   const changedAt = new Date(now).toISOString();
   const expiration = {
     id: globalThis.crypto?.randomUUID?.() || `${now}-${Math.random().toString(16).slice(2)}`,
@@ -479,7 +479,7 @@ export function addExpiration(state, item, expiresOn, now = Date.now()) {
 }
 
 export function updateExpiration(state, expirationId, expiresOn, now = Date.now()) {
-  if (!Number.isFinite(localDayStamp(expiresOn))) throw new Error("Fecha de caducidad no vÃ¡lida");
+  if (!Number.isFinite(localDayStamp(expiresOn))) throw new Error("Fecha de caducidad no válida");
   const expiration = (state.expirations || []).find((entry) => entry.id === expirationId);
   if (!expiration) return null;
   expiration.expiresOn = String(expiresOn).slice(0, 10);
@@ -559,7 +559,7 @@ export function getSuggestions(state, now = Date.now()) {
             key: entry.key,
             name: entry.name,
             category: entry.category,
-            reason: `Hace ${elapsed} dÃ­as que no lo compras`,
+            reason: `Hace ${elapsed} días que no lo compras`,
             score: elapsed / dueAfter,
             kind: "remembered",
           };
@@ -571,7 +571,7 @@ export function getSuggestions(state, now = Date.now()) {
             key: entry.key,
             name: entry.name,
             category: entry.category,
-            reason: `Lo pediste hace ${elapsed} dÃ­as`,
+            reason: `Lo pediste hace ${elapsed} días`,
             score: elapsed / 21,
             kind: "remembered",
           };
@@ -600,6 +600,6 @@ export function getSuggestions(state, now = Date.now()) {
 export function shoppingSummary(items) {
   const pending = items.filter((item) => !item.checked);
   const families = groupItems(pending).length;
-  if (!pending.length) return "La lista estÃ¡ vacÃ­a";
+  if (!pending.length) return "La lista está vacía";
   return `${pending.length} ${pending.length === 1 ? "producto" : "productos"} en ${families} ${families === 1 ? "familia" : "familias"}`;
 }
