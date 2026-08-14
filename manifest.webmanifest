@@ -1,7 +1,7 @@
 {
-  "name": "La compra familiar",
-  "short_name": "La compra",
-  "description": "Lista de la compra con voz, memoria y sugerencias útiles.",
+  "name": "Â¿QuÃ© te falta?",
+  "short_name": "Â¿QuÃ© te falta?",
+  "description": "Lista familiar con voz, memoria y sugerencias Ãºtiles.",
   "lang": "es",
   "start_url": "./",
   "scope": "./",
@@ -29,3 +29,4 @@
     }
   ]
 }
+
