@@ -7,7 +7,9 @@ const LocalNotifications = plugins.LocalNotifications;
 const Share = plugins.Share;
 const SplashScreen = plugins.SplashScreen;
 const SpeechRecognition = plugins.SpeechRecognition;
+const FirebaseAuthentication = plugins.FirebaseAuthentication;
 let speechListenerHandles = [];
+let accountAuthListenerHandle = null;
 
 function notificationId(value) {
   let hash = 2166136261;
@@ -122,6 +124,35 @@ globalThis.LaCompraNative = {
   replaceExpirationNotifications,
   startSpeechRecognition,
   stopSpeechRecognition,
+  accountAuth: {
+    available: Boolean(isNative && FirebaseAuthentication),
+    async getCurrentUser() {
+      if (!FirebaseAuthentication) return null;
+      return (await FirebaseAuthentication.getCurrentUser()).user || null;
+    },
+    async getIdToken() {
+      if (!FirebaseAuthentication) throw new Error("El acceso seguro no está disponible");
+      return (await FirebaseAuthentication.getIdToken()).token;
+    },
+    async signIn(provider) {
+      if (!FirebaseAuthentication) throw new Error("El acceso seguro no está disponible");
+      const result = provider === "apple"
+        ? await FirebaseAuthentication.signInWithApple()
+        : await FirebaseAuthentication.signInWithGoogle();
+      return result.user || null;
+    },
+    async signOut() {
+      if (FirebaseAuthentication) await FirebaseAuthentication.signOut();
+    },
+    async deleteUser() {
+      if (FirebaseAuthentication) await FirebaseAuthentication.deleteUser();
+    },
+    async onChange(callback) {
+      await accountAuthListenerHandle?.remove?.().catch(() => {});
+      if (!FirebaseAuthentication) return;
+      accountAuthListenerHandle = await FirebaseAuthentication.addListener("authStateChange", ({ user }) => callback(user || null));
+    },
+  },
 };
 
 const initialLaunchUrl = isNative && App?.getLaunchUrl ? App.getLaunchUrl().catch(() => null) : Promise.resolve(null);

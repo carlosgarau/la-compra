@@ -1,4 +1,4 @@
-name: Preparar o subir La compra a TestFlight
+name: Preparar o subir ¿Qué te falta? a TestFlight
 
 on:
   workflow_dispatch:
@@ -32,7 +32,6 @@ jobs:
       APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
       APPLE_CERTIFICATE_P12_BASE64: ${{ secrets.APPLE_CERTIFICATE_P12_BASE64 }}
       APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-      APPLE_PROVISIONING_PROFILE_BASE64: ${{ secrets.APPLE_PROVISIONING_PROFILE_BASE64 }}
       APPLE_API_PRIVATE_KEY: ${{ secrets.APPLE_API_PRIVATE_KEY }}
       APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
       APPLE_API_ISSUER_ID: ${{ secrets.APPLE_API_ISSUER_ID }}
@@ -57,7 +56,7 @@ jobs:
 
       - name: Instalar y validar
         run: |
-          pnpm install --frozen-lockfile
+          pnpm install --no-frozen-lockfile
           pnpm run check
           pnpm run check:app-store
           pnpm run ios:sync
@@ -66,28 +65,29 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for name in APPLE_TEAM_ID APPLE_CERTIFICATE_P12_BASE64 APPLE_CERTIFICATE_PASSWORD APPLE_PROVISIONING_PROFILE_BASE64; do
+          for name in APPLE_TEAM_ID APPLE_CERTIFICATE_P12_BASE64 APPLE_CERTIFICATE_PASSWORD APPLE_API_PRIVATE_KEY APPLE_API_KEY_ID APPLE_API_ISSUER_ID; do
             if [[ -z "${!name:-}" ]]; then
               echo "Falta el secreto $name" >&2
               exit 1
             fi
           done
-          if [[ "${{ inputs.upload }}" == "true" ]]; then
-            for name in APPLE_API_PRIVATE_KEY APPLE_API_KEY_ID APPLE_API_ISSUER_ID; do
-              if [[ -z "${!name:-}" ]]; then
-                echo "Falta el secreto $name para subir a TestFlight" >&2
-                exit 1
-              fi
-            done
-          fi
 
-      - name: Instalar certificado y perfil
+      - name: Preparar clave de App Store Connect
+        shell: bash
+        run: |
+          set -euo pipefail
+          KEY_DIR="$HOME/.appstoreconnect/private_keys"
+          mkdir -p "$KEY_DIR"
+          KEY_PATH="$KEY_DIR/AuthKey_${APPLE_API_KEY_ID}.p8"
+          printf '%s' "$APPLE_API_PRIVATE_KEY" > "$KEY_PATH"
+          chmod 600 "$KEY_PATH"
+          echo "APPLE_API_KEY_PATH=$KEY_PATH" >> "$GITHUB_ENV"
+
+      - name: Instalar certificado de distribución
         shell: bash
         run: |
           set -euo pipefail
           export CERTIFICATE_PATH="$RUNNER_TEMP/distribution.p12"
-          export PROFILE_PATH="$RUNNER_TEMP/app-store.mobileprovision"
-          export PROFILE_PLIST="$RUNNER_TEMP/app-store-profile.plist"
           export KEYCHAIN_PATH="$RUNNER_TEMP/app-signing.keychain-db"
           export KEYCHAIN_PASSWORD="$(uuidgen)"
 
@@ -95,9 +95,6 @@ jobs:
           import base64, os, pathlib
           pathlib.Path(os.environ["CERTIFICATE_PATH"]).write_bytes(
               base64.b64decode(os.environ["APPLE_CERTIFICATE_P12_BASE64"])
-          )
-          pathlib.Path(os.environ["PROFILE_PATH"]).write_bytes(
-              base64.b64decode(os.environ["APPLE_PROVISIONING_PROFILE_BASE64"])
           )
           PY
 
@@ -114,16 +111,8 @@ jobs:
             -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
           security list-keychains -d user -s "$KEYCHAIN_PATH"
 
-          security cms -D -i "$PROFILE_PATH" > "$PROFILE_PLIST"
-          PROFILE_UUID="$(/usr/libexec/PlistBuddy -c 'Print :UUID' "$PROFILE_PLIST")"
-          PROFILE_NAME="$(/usr/libexec/PlistBuddy -c 'Print :Name' "$PROFILE_PLIST")"
-          mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
-          cp "$PROFILE_PATH" "$HOME/Library/MobileDevice/Provisioning Profiles/$PROFILE_UUID.mobileprovision"
-
           echo "KEYCHAIN_PATH=$KEYCHAIN_PATH" >> "$GITHUB_ENV"
           echo "KEYCHAIN_PASSWORD=$KEYCHAIN_PASSWORD" >> "$GITHUB_ENV"
-          echo "PROFILE_UUID=$PROFILE_UUID" >> "$GITHUB_ENV"
-          echo "PROFILE_NAME=$PROFILE_NAME" >> "$GITHUB_ENV"
 
       - name: Crear archivo firmado
         shell: bash
@@ -140,9 +129,11 @@ jobs:
             DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
             PRODUCT_BUNDLE_IDENTIFIER="$BUNDLE_ID" \
             CURRENT_PROJECT_VERSION="$BUILD_NUMBER" \
-            CODE_SIGN_STYLE=Manual \
-            CODE_SIGN_IDENTITY="Apple Distribution" \
-            PROVISIONING_PROFILE_SPECIFIER="$PROFILE_NAME" \
+            CODE_SIGN_STYLE=Automatic \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$APPLE_API_KEY_PATH" \
+            -authenticationKeyID "$APPLE_API_KEY_ID" \
+            -authenticationKeyIssuerID "$APPLE_API_ISSUER_ID" \
             clean archive | tee build/archive.log
 
       - name: Exportar IPA
@@ -159,14 +150,9 @@ jobs:
             <key>method</key>
             <string>app-store-connect</string>
             <key>signingStyle</key>
-            <string>manual</string>
+            <string>automatic</string>
             <key>teamID</key>
             <string>$APPLE_TEAM_ID</string>
-            <key>provisioningProfiles</key>
-            <dict>
-              <key>$BUNDLE_ID</key>
-              <string>$PROFILE_NAME</string>
-            </dict>
             <key>stripSwiftSymbols</key>
             <true/>
             <key>uploadSymbols</key>
@@ -179,7 +165,11 @@ jobs:
             -exportArchive \
             -archivePath build/LaCompra.xcarchive \
             -exportPath build/export \
-            -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" | tee build/export.log
+            -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$APPLE_API_KEY_PATH" \
+            -authenticationKeyID "$APPLE_API_KEY_ID" \
+            -authenticationKeyIssuerID "$APPLE_API_ISSUER_ID" | tee build/export.log
 
           IPA_PATH="$(find build/export -maxdepth 1 -name '*.ipa' -print -quit)"
           if [[ -z "$IPA_PATH" ]]; then
@@ -187,18 +177,6 @@ jobs:
             exit 1
           fi
           echo "IPA_PATH=$IPA_PATH" >> "$GITHUB_ENV"
-
-      - name: Preparar clave de App Store Connect
-        if: ${{ inputs.upload }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          KEY_DIR="$HOME/.appstoreconnect/private_keys"
-          mkdir -p "$KEY_DIR"
-          KEY_PATH="$KEY_DIR/AuthKey_${APPLE_API_KEY_ID}.p8"
-          printf '%s' "$APPLE_API_PRIVATE_KEY" > "$KEY_PATH"
-          chmod 600 "$KEY_PATH"
-          echo "APPLE_API_KEY_PATH=$KEY_PATH" >> "$GITHUB_ENV"
 
       - name: Validar con App Store Connect
         if: ${{ inputs.upload }}
@@ -234,9 +212,6 @@ jobs:
         if: always()
         shell: bash
         run: |
-          if [[ -n "${PROFILE_UUID:-}" ]]; then
-            rm -f "$HOME/Library/MobileDevice/Provisioning Profiles/$PROFILE_UUID.mobileprovision"
-          fi
           if [[ -n "${APPLE_API_KEY_PATH:-}" ]]; then
             rm -f "$APPLE_API_KEY_PATH"
           fi

@@ -11,12 +11,15 @@ Lista familiar para iPhone y web, pensada para usarla con una mano o mediante la
 - Controla caducidades, avisa 3 días y 1 día antes y recomienda congelar cuando corresponde.
 - Lee la lista en voz alta y entiende órdenes como «¿qué hay en la lista?».
 - Comparte la lista familiar o una lista puntual mediante la hoja nativa de iOS, incluido WhatsApp.
-- Cifra cada lista compartida con una contraseña que no viaja dentro del enlace.
-- Funciona sin cuenta: los datos locales permanecen en el dispositivo y compartir es opcional.
+- Inicia sesión con Google o Apple solo cuando quieras compartir y sincronizar.
+- Da acceso a cada lista por separado y permite consultar o retirar miembros.
+- Funciona sin cuenta para uso personal: los datos locales permanecen en el dispositivo.
 
-## Seguridad al compartir
+## Cuentas y seguridad al compartir
 
-La aplicación cifra las listas compartidas con AES-256-GCM. La clave se deriva de una contraseña de al menos 8 caracteres mediante PBKDF2-SHA256. El enlace y la contraseña deben enviarse por canales o mensajes separados. El servidor recibe el contenido cifrado, no la contraseña.
+Las listas nuevas se comparten únicamente entre cuentas autorizadas mediante Firebase Authentication. Una invitación aleatoria da acceso solo a la lista elegida; la persona invitada debe iniciar sesión y aceptarla. La persona propietaria puede retirar miembros y eliminar su cuenta y sus datos desde la aplicación.
+
+Las listas antiguas compartidas mediante contraseña mantienen durante la transición su cifrado AES-256-GCM en el dispositivo.
 
 ## Desarrollo
 

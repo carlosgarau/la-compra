@@ -40,7 +40,7 @@ function pngInfo(relativePath) {
 
 const capacitor = JSON.parse(file("capacitor.config.json") || "{}");
 requireCondition(capacitor.appId === expectedBundleId, "El appId de Capacitor no coincide con el Bundle ID");
-requireCondition(capacitor.appName === "La compra", "El nombre de Capacitor debe ser La compra");
+requireCondition(capacitor.appName === "¿Qué te falta?", "El nombre de Capacitor debe ser ¿Qué te falta?");
 requireCondition(capacitor.webDir === "www", "Capacitor debe empaquetar el directorio www");
 
 const project = file("ios/App/App.xcodeproj/project.pbxproj");
@@ -52,6 +52,8 @@ requireCondition((project.match(/IPHONEOS_DEPLOYMENT_TARGET = 15\.0;/g) || []).l
   "El destino mínimo debe ser iOS 15");
 
 const infoPlist = file("ios/App/App/Info.plist");
+requireCondition(infoPlist.includes("<string>¿Qué te falta?</string>"),
+  "El nombre visible en iPhone debe ser ¿Qué te falta?");
 for (const requiredText of [
   "NSMicrophoneUsageDescription",
   "NSSpeechRecognitionUsageDescription",
@@ -77,8 +79,8 @@ for (const requiredText of [
 const metadata = file("APP_STORE_METADATA.md");
 for (const requiredText of [
   expectedBundleId,
-  "https://carlosgarau.github.io/la-compra/support.html",
-  "https://carlosgarau.github.io/la-compra/privacy.html",
+  "https://carlosgarau.github.io/que-te-falta/support.html",
+  "https://carlosgarau.github.io/que-te-falta/privacy.html",
   "LA-COMPRA-IOS-001",
 ]) {
   requireCondition(metadata.includes(requiredText), `Los metadatos no contienen ${requiredText}`);

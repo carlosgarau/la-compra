@@ -7,7 +7,7 @@
   "description": "Lista familiar para web e iPhone.",
   "scripts": {
     "test": "node --test tests.mjs",
-    "check": "node --check app.mjs && node --check family-sync.mjs && node --check secure-sharing.mjs && node --check native-bridge.mjs && node --test tests.mjs",
+    "check": "node --check app.mjs && node --check account-sharing.mjs && node --check family-sync.mjs && node --check secure-sharing.mjs && node --check native-bridge.mjs && node --test tests.mjs",
     "check:app-store": "node scripts/validate-app-store.mjs",
     "build:web": "node scripts/build-web.mjs",
     "ios:add": "node scripts/build-web.mjs && cap add ios",
@@ -15,6 +15,7 @@
     "ios:open": "cap open ios"
   },
   "dependencies": {
+    "@capacitor-firebase/authentication": "8.2.0",
     "@capacitor/app": "8.1.1",
     "@capacitor/core": "8.5.0",
     "@capacitor/haptics": "8.0.2",

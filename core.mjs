@@ -364,6 +364,8 @@ export function hydrateState(raw) {
         id: String(list.id || ""),
         name: titleCase(list.name || "Lista especial"),
         shareId: String(list.shareId || ""),
+        accountListId: String(list.accountListId || ""),
+        accountRole: list.accountRole === "owner" ? "owner" : list.accountRole ? "editor" : "",
         createdAt: list.createdAt || new Date().toISOString(),
         items: Array.isArray(list.items) ? list.items : [],
       })).filter((list) => list.id)

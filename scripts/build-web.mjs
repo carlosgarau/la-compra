@@ -12,6 +12,7 @@ const assets = [
   "icon-512.png",
   "apple-touch-icon.png",
   "app.mjs",
+  "account-sharing.mjs",
   "core.mjs",
   "family-sync.mjs",
   "secure-sharing.mjs",

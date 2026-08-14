@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>es</string>
 	<key>CFBundleDisplayName</key>
-        <string>La compra</string>
+		<string>¿Qué te falta?</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -26,6 +26,14 @@
 	<array>
 		<dict>
 			<key>CFBundleURLName</key>
+			<string>Google Sign-In</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.927654282506-sn3cu5dvm6ijfho5m2kq5upsa0rbpap3</string>
+			</array>
+		</dict>
+		<dict>
+			<key>CFBundleURLName</key>
 			<string>com.carlosgarau.lacompra</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
@@ -34,9 +42,9 @@
 		</dict>
 	</array>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>La compra usa el micrófono solo cuando pulsas el botón para añadir productos mediante la voz.</string>
+	<string>¿Qué te falta? usa el micrófono solo cuando pulsas el botón para añadir productos mediante la voz.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
-	<string>La compra convierte en texto los productos que dictas para añadirlos a tu lista.</string>
+	<string>¿Qué te falta? convierte en texto los productos que dictas para añadirlos a tu lista.</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>LSApplicationCategoryType</key>

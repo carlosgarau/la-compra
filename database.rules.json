@@ -1,0 +1,55 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "families": {
+      "$familyId": {
+        ".read": true,
+        ".write": true
+      }
+    },
+    "sharedLists": {
+      "$listId": {
+        ".read": true,
+        ".write": true
+      }
+    },
+    "userProfiles": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid"
+      }
+    },
+    "userLists": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        "$listId": {
+          ".write": "auth != null && ((auth.uid === $uid && (!newData.exists() || root.child('lists').child($listId).child('members').child(auth.uid).exists())) || (!newData.exists() && root.child('lists').child($listId).child('members').child(auth.uid).child('role').val() === 'owner'))"
+        }
+      }
+    },
+    "lists": {
+      "$listId": {
+        ".read": "auth != null && data.child('members').child(auth.uid).exists()",
+        ".write": "auth != null && ((!data.exists() && newData.child('meta').child('ownerId').val() === auth.uid && newData.child('members').child(auth.uid).child('role').val() === 'owner') || (data.child('members').child(auth.uid).child('role').val() === 'owner' && !newData.exists()))",
+        "meta": {
+          ".write": "auth != null && root.child('lists').child($listId).child('members').child(auth.uid).child('role').val() === 'owner'"
+        },
+        "state": {
+          ".write": "auth != null && (root.child('lists').child($listId).child('members').child(auth.uid).child('role').val() === 'owner' || root.child('lists').child($listId).child('members').child(auth.uid).child('role').val() === 'editor')"
+        },
+        "members": {
+          "$uid": {
+            ".write": "auth != null && (root.child('lists').child($listId).child('members').child(auth.uid).child('role').val() === 'owner' || (auth.uid === $uid && !data.exists() && newData.child('inviteId').isString() && root.child('invites').child(newData.child('inviteId').val()).child('listId').val() === $listId && root.child('invites').child(newData.child('inviteId').val()).child('expiresAt').val() > now) || (auth.uid === $uid && !newData.exists()))"
+          }
+        }
+      }
+    },
+    "invites": {
+      "$inviteId": {
+        ".read": "auth != null",
+        ".write": "auth != null && ((!data.exists() && root.child('lists').child(newData.child('listId').val()).child('members').child(auth.uid).child('role').val() === 'owner') || data.child('createdBy').val() === auth.uid)"
+      }
+    }
+  }
+}

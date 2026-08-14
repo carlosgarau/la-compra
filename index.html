@@ -8,10 +8,10 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="¿Qué te falta?" />
     <meta name="description" content="Tu lista familiar, con voz, memoria y sugerencias útiles." />
-    <link rel="manifest" href="manifest.webmanifest?v=21" />
+    <link rel="manifest" href="manifest.webmanifest?v=22" />
     <link rel="icon" href="icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="apple-touch-icon.png" />
-    <link rel="stylesheet" href="styles.css?v=21" />
+    <link rel="stylesheet" href="styles.css?v=22" />
     <title>¿Qué te falta?</title>
   </head>
   <body>
@@ -70,7 +70,7 @@
             <div class="section-heading">
               <div>
                 <span class="eyebrow">AHORA</span>
-                <h2><span id="listTitle">Compra habitual</span> <span class="count-badge" id="itemCount">0</span></h2>
+                <h2><span id="listTitle">Lista habitual</span> <span class="count-badge" id="itemCount">0</span></h2>
               </div>
               <button class="shopping-start" id="shoppingStart" type="button">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 5 2 2 3-3M11 6h9M4 12l2 2 3-3M11 13h9M4 19l2 2 3-3M11 20h9"/></svg>
@@ -264,6 +264,48 @@
       </form>
     </dialog>
 
+    <dialog class="app-dialog account-dialog" id="accountDialog">
+      <div class="dialog-icon account-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-5 3-8 8-8s8 3 8 8"/></svg>
+      </div>
+      <span class="eyebrow">TU CUENTA</span>
+      <h2 id="accountDialogTitle">Entra para compartir</h2>
+      <p id="accountDialogText">La lista seguirá funcionando sin cuenta en este móvil. Inicia sesión únicamente para compartirla y sincronizarla con tu familia.</p>
+      <div class="account-provider-actions">
+        <button class="provider-button google" id="googleSignInButton" type="button"><span aria-hidden="true">G</span>Continuar con Google</button>
+        <button class="provider-button apple" id="appleSignInButton" type="button"><span aria-hidden="true">●</span>Continuar con Apple</button>
+      </div>
+      <small class="account-guidance">No tendrás que crear ni recordar otra contraseña.</small>
+      <button class="secondary account-cancel" id="accountCancelButton" type="button">Ahora no</button>
+    </dialog>
+
+    <dialog class="app-dialog invite-dialog" id="inviteDialog">
+      <div class="dialog-icon account-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M4 12h16M14 6l6 6-6 6"/><circle cx="7" cy="7" r="3"/><path d="M2 19c0-4 2-6 5-6"/></svg>
+      </div>
+      <span class="eyebrow">INVITACIÓN</span>
+      <h2 id="inviteTitle">Te han compartido una lista</h2>
+      <p id="inviteText">Inicia sesión para verla y actualizarla junto a tu familia.</p>
+      <div class="dialog-actions">
+        <button class="primary" id="inviteAcceptButton" type="button">Aceptar invitación</button>
+        <button class="secondary" id="inviteCancelButton" type="button">Ahora no</button>
+      </div>
+    </dialog>
+
+    <dialog class="app-dialog members-dialog" id="membersDialog">
+      <div class="dialog-icon account-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><circle cx="8" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M2 20c0-5 2-8 6-8s6 3 6 8M14 14c4 0 6 2 6 6"/></svg>
+      </div>
+      <span class="eyebrow">PERSONAS CON ACCESO</span>
+      <h2>Tu lista familiar</h2>
+      <p>Todos pueden añadir, tachar y actualizar productos en tiempo real.</p>
+      <div class="members-list" id="membersList"></div>
+      <div class="dialog-actions">
+        <button class="primary" id="membersInviteButton" type="button">Invitar por WhatsApp</button>
+        <button class="secondary" id="membersCloseButton" type="button">Cerrar</button>
+      </div>
+    </dialog>
+
     <dialog class="app-dialog shared-password-dialog" id="sharedPasswordDialog">
       <div class="dialog-icon password-icon">
         <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3"/></svg>
@@ -298,14 +340,27 @@
         <span><strong>Confirmaciones por voz</strong><small>La app te responde al añadir y ante repetidos.</small></span>
         <input id="speakToggle" type="checkbox" role="switch" />
       </label>
+      <div class="settings-group account-settings">
+        <strong>Tu cuenta</strong>
+        <div class="account-summary" id="accountSummary">
+          <span class="account-avatar" id="accountAvatar" aria-hidden="true">?</span>
+          <span><b id="accountName">Sin iniciar sesión</b><small id="accountEmail">Puedes usar la app sin cuenta.</small></span>
+        </div>
+        <div class="settings-actions account-actions">
+          <button class="family-share-button" id="accountSignInButton" type="button">Iniciar sesión</button>
+          <button id="accountSignOutButton" type="button" hidden>Cerrar sesión</button>
+        </div>
+      </div>
       <div class="settings-group family-settings">
-        <strong>Lista familiar</strong>
-        <p id="familyStatus">Esta copia solo está en este móvil.</p>
+        <strong>Lista familiar compartida</strong>
+        <p id="familyStatus">Inicia sesión para compartirla de forma privada.</p>
         <div class="settings-actions family-actions">
-          <button class="family-share-button" id="familyShareButton" type="button">Crear lista compartida</button>
+          <button class="family-share-button" id="familyShareButton" type="button">Invitar por WhatsApp</button>
+          <button id="familyMembersButton" type="button" hidden>Ver personas</button>
           <button id="familyDisconnectButton" type="button" hidden>Dejar de compartir</button>
         </div>
-        <small class="family-privacy">La lista se cifra con una contraseña distinta del enlace. Puedes enviar el enlace por WhatsApp y comunicar la contraseña aparte.</small>
+        <div class="account-list-memberships" id="accountListMemberships"></div>
+        <small class="family-privacy">Cada familiar entra con Google o Apple. Puedes quitar su acceso cuando quieras.</small>
       </div>
       <div class="settings-group">
         <strong>Tus datos</strong>
@@ -316,11 +371,12 @@
         </div>
       </div>
       <button class="danger-button" id="clearButton" type="button">Borrar lista e historial</button>
+      <button class="danger-button account-delete" id="deleteAccountButton" type="button" hidden>Eliminar mi cuenta y mis datos</button>
       <p class="legal-links"><a href="privacy.html">Política de privacidad</a> · <a href="support.html">Ayuda y contacto</a></p>
     </dialog>
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-    <script type="module" src="app.mjs?v=21"></script>
+    <script type="module" src="app.mjs?v=22"></script>
   </body>
 </html>

@@ -1,6 +1,6 @@
 # Respuestas preparadas para App Store Connect
 
-Valores previstos para la primera versión de **La compra**. Deben copiarse en App Store Connect cuando Apple active la membresía.
+Valores previstos para la primera versión de **¿Qué te falta?**. Deben copiarse en App Store Connect cuando Apple active la membresía.
 
 ## Nueva aplicación
 
@@ -13,7 +13,7 @@ Valores previstos para la primera versión de **La compra**. Deben copiarse en A
 - Compatibilidad inicial: iPhone, iOS 15 o posterior, orientación vertical.
 - Precio: gratis.
 - Compras integradas: no.
-- Inicio de sesión: no.
+- Inicio de sesión: opcional para el uso personal y necesario para compartir o sincronizar listas. Compatible con Apple y Google.
 
 ## Categorías y derechos
 
@@ -26,22 +26,30 @@ Valores previstos para la primera versión de **La compra**. Deben copiarse en A
 ## Privacidad
 
 - Seguimiento, publicidad y analítica: no.
-- Nombre, correo, teléfono, contactos y ubicación: no se recopilan.
+- Nombre y correo electrónico: sí, únicamente al iniciar sesión con Apple o Google.
+  - Finalidad: funcionalidad de la aplicación y gestión de miembros.
+  - Vinculado con la identidad: sí.
+  - Usado para seguimiento: no.
+- Teléfono, contactos y ubicación: no se recopilan.
 - Audio: no se almacena; el micrófono se activa únicamente al pulsar el botón de voz.
 - Contenido del usuario: sí, únicamente productos, cantidades, listas y caducidades cuando se activa una lista compartida.
   - Finalidad: funcionalidad de la aplicación.
-  - Vinculado con la identidad: no.
+  - Vinculado con la identidad: sí cuando se comparte mediante una cuenta.
   - Usado para seguimiento: no.
 - Historial de compras: sí, cuando se activa una lista compartida.
   - Finalidades: personalización del producto y funcionalidad de la aplicación.
-  - Vinculado con la identidad: no.
+  - Vinculado con la identidad: sí cuando se comparte mediante una cuenta.
   - Usado para seguimiento: no.
 - Identificador del dispositivo: identificador aleatorio de instalación para sincronización.
   - Finalidad: funcionalidad de la aplicación.
   - Vinculado con la identidad: no.
   - Usado para seguimiento: no.
-- Servidor: Firebase Realtime Database; el contenido compartido se cifra en el dispositivo antes de enviarse.
-- URL de privacidad: `https://carlosgarau.github.io/la-compra/privacy.html`.
+- Identificador de usuario: sí, generado por Firebase Authentication.
+  - Finalidad: autenticación, sincronización y permisos de acceso.
+  - Vinculado con la identidad: sí.
+  - Usado para seguimiento: no.
+- Servidor: Firebase Authentication y Firebase Realtime Database. El acceso a las listas nuevas está limitado a sus miembros autenticados; los enlaces antiguos con contraseña mantienen su cifrado en el dispositivo durante la transición.
+- URL de privacidad: `https://carlosgarau.github.io/que-te-falta/privacy.html`.
 - URL de opciones de privacidad: vacía; las opciones de borrado están dentro de la aplicación.
 
 Respuestas publicadas en App Store Connect el 12 de agosto de 2026, después de revisar la sincronización con Firebase y los componentes de voz.
@@ -52,7 +60,7 @@ Respuestas confirmadas en App Store Connect con clasificación general 4+:
 
 - Controles parentales y verificación de edad: no.
 - Acceso web sin restricciones: no.
-- Contenido generado por usuarios con distribución amplia: no. Las listas solo se comparten con personas que reciben el enlace y conocen la contraseña.
+- Contenido generado por usuarios con distribución amplia: no. Las listas solo se comparten con cuentas invitadas expresamente.
 - Red social, mensajería o chat: no.
 - Publicidad: no.
 - Temas maduros, violencia, sexualidad, drogas, armas o lenguaje ofensivo: ninguno.
@@ -83,7 +91,7 @@ Respuestas confirmadas en App Store Connect con clasificación general 4+:
 ## Información para App Review
 
 - Persona de contacto: Carlos Garau Covas.
-- Cuenta de demostración: no necesaria.
+- Cuenta de demostración: no necesaria para revisar las funciones personales. Apple puede usar <strong>Iniciar sesión con Apple</strong> para comprobar el intercambio; en las notas se indicará el flujo exacto.
 - Notas: usar las incluidas en `APP_STORE_METADATA.md`.
-- URL de soporte: `https://carlosgarau.github.io/la-compra/support.html`.
+- URL de soporte: `https://carlosgarau.github.io/que-te-falta/support.html`.
 - Publicación: manual después de la aprobación.

@@ -7,6 +7,7 @@ import {
   detectVoiceCommand,
   getActiveExpirations,
   getPendingExpirationAlerts,
+  getPreviouslyPurchased,
   getSuggestions,
   groupItems,
   hydrateState,
@@ -20,6 +21,7 @@ import {
   productKey,
   registerPurchase,
   registerRequest,
+  updateExpiration,
 } from "./core.mjs";
 import {
   createFamilyId,
@@ -44,6 +46,14 @@ import {
   isEncryptedSharedRecord,
   validateSharedPassword,
 } from "./secure-sharing.mjs";
+import {
+  accountInviteFromUrl,
+  accountStateFrom,
+  clearAccountInviteFromUrl,
+  makeAccountInviteUrl,
+  mergeAccountState,
+  normalizeAccountUser,
+} from "./account-sharing.mjs";
 
 test("separa una frase con varios productos", () => {
   const entries = parseSpokenList("Añade leche, pan y dos kilos de patatas a la lista de la compra");
@@ -144,6 +154,33 @@ test("avisa a tres días y vuelve a avisar a un día", () => {
   assert.equal(getPendingExpirationAlerts(state, secondCheck)[0].threshold, 1);
 });
 
+test("permite cambiar una caducidad y reinicia sus avisos", () => {
+  const state = createInitialState();
+  const item = parseEntry("patatas");
+  const now = new Date(2026, 7, 14, 10).getTime();
+  const expiration = addExpiration(state, item, "2026-08-17", now);
+  markExpirationAlerted(state, expiration.id, 3);
+
+  const updated = updateExpiration(state, expiration.id, "2026-08-19", now + 1000);
+  assert.equal(updated.id, expiration.id);
+  assert.equal(updated.expiresOn, "2026-08-19");
+  assert.deepEqual(updated.alertsSent, []);
+  assert.equal(getActiveExpirations(state, now)[0].daysLeft, 5);
+});
+
+test("ofrece productos comprados anteriormente sin duplicados ni activos", () => {
+  const state = createInitialState();
+  const milk = parseEntry("leche");
+  const bread = parseEntry("pan");
+  registerPurchase(state, milk, new Date(2026, 7, 12, 10).getTime());
+  registerPurchase(state, bread, new Date(2026, 7, 13, 10).getTime());
+  registerPurchase(state, milk, new Date(2026, 7, 14, 10).getTime());
+
+  const previous = getPreviouslyPurchased(state, [bread]);
+  assert.deepEqual(previous.map((entry) => entry.key), [milk.key]);
+  assert.equal(previous[0].name, "Leche");
+});
+
 test("crea y reconoce enlaces familiares privados", () => {
   const fakeCrypto = {
     getRandomValues(bytes) {
@@ -153,25 +190,25 @@ test("crea y reconoce enlaces familiares privados", () => {
   };
   const familyId = createFamilyId(fakeCrypto);
   assert.equal(familyId.length, 43);
-  const url = makeFamilyShareUrl("https://example.com/la-compra/?command=pan#lista", familyId);
+  const url = makeFamilyShareUrl("https://example.com/que-te-falta/?command=pan#lista", familyId);
   assert.equal(familyIdFromUrl(url), familyId);
   assert.equal(new URL(url).searchParams.has("command"), false);
 });
 
 test("traspasa la familia de Safari a la app instalada mediante cookie", () => {
   const familyId = "f".repeat(43);
-  const sharedUrl = makeFamilyShareUrl("https://example.com/la-compra/", familyId);
+  const sharedUrl = makeFamilyShareUrl("https://example.com/que-te-falta/", familyId);
   const cookiePath = familyCookiePathFromUrl(sharedUrl);
   const setCookie = makeFamilyCookie(familyId, cookiePath);
   const cookieHeader = setCookie.split(";")[0];
 
-  assert.equal(cookiePath, "/la-compra/");
+  assert.equal(cookiePath, "/que-te-falta/");
   assert.equal(familyIdFromUrl(sharedUrl), familyId);
   assert.equal(familyIdFromCookie(cookieHeader), familyId);
   assert.match(setCookie, new RegExp(`^${FAMILY_COOKIE_NAME}=${familyId};`));
   assert.match(setCookie, new RegExp(`Max-Age=${FAMILY_COOKIE_MAX_AGE}`));
-  assert.match(setCookie, /Path=\/la-compra\/; SameSite=Strict; Secure$/);
-  assert.match(expireFamilyCookie(cookiePath), /Max-Age=0; Path=\/la-compra\//);
+  assert.match(setCookie, /Path=\/que-te-falta\/; SameSite=Strict; Secure$/);
+  assert.match(expireFamilyCookie(cookiePath), /Max-Age=0; Path=\/que-te-falta\//);
 });
 
 test("ignora cookies familiares manipuladas o incompletas", () => {
@@ -182,7 +219,7 @@ test("ignora cookies familiares manipuladas o incompletas", () => {
 
 test("crea un enlace aislado para una sola lista especial", () => {
   const listId = "N".repeat(43);
-  const url = makeSharedListUrl("https://example.com/la-compra/?familia=secreto&command=pan", listId);
+  const url = makeSharedListUrl("https://example.com/que-te-falta/?familia=secreto&command=pan", listId);
   assert.equal(sharedListIdFromUrl(url), listId);
   assert.equal(new URL(url).searchParams.has("familia"), false);
   assert.equal(new URL(url).searchParams.has("command"), false);
@@ -351,4 +388,41 @@ test("sincroniza una familia cifrada sin guardar el contenido en claro", async (
   });
   await invited.start(createInitialState());
   assert.equal(downloaded.items[0].name, "Tomate");
+});
+
+test("crea invitaciones de cuenta sin exponer otra lista", () => {
+  const url = makeAccountInviteUrl("https://carlosgarau.github.io/que-te-falta/", "abc_123");
+  assert.equal(accountInviteFromUrl(url), "abc_123");
+  assert.equal(clearAccountInviteFromUrl(url), "/que-te-falta/");
+  assert.equal(new URL(url).searchParams.has("familia"), false);
+  assert.equal(new URL(url).searchParams.has("lista"), false);
+});
+
+test("sincroniza la lista familiar sin mezclar listas especiales", () => {
+  const local = createInitialState();
+  local.items.push({ id: "1", name: "Tomate" });
+  local.specialLists.push({ id: "navidad", name: "Navidad", items: [{ id: "2", name: "Turrón" }] });
+  const cloud = accountStateFrom(local);
+  assert.equal("specialLists" in cloud, false);
+  assert.equal(cloud.items[0].name, "Tomate");
+
+  const merged = mergeAccountState({ ...cloud, items: [{ id: "3", name: "Leche" }] }, local);
+  assert.equal(merged.items[0].name, "Leche");
+  assert.equal(merged.specialLists[0].name, "Navidad");
+});
+
+test("conserva la identidad mínima de Google o Apple", () => {
+  assert.deepEqual(normalizeAccountUser({
+    uid: "u1",
+    displayName: "Carlos Garau",
+    email: "carlos@example.com",
+    photoUrl: "https://example.com/carlos.jpg",
+    providerId: "google.com",
+  }), {
+    uid: "u1",
+    displayName: "Carlos Garau",
+    email: "carlos@example.com",
+    photoURL: "https://example.com/carlos.jpg",
+    providerId: "google.com",
+  });
 });

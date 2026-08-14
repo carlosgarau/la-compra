@@ -1,6 +1,6 @@
 # Preparación para App Store
 
-Estado de este paquete: **proyecto iOS preparado; la compilación se ejecutará en GitHub Actions con macOS 26 y Xcode 26, sin necesitar un Mac propio. La firma y la subida quedan pendientes de activar la cuenta Apple Developer**.
+Estado de este paquete: **proyecto iOS preparado; la compilación se ejecuta en GitHub Actions con macOS 26 y Xcode 26, sin necesitar un Mac propio. La cuenta Apple Developer, el App ID y el perfil de App Store están activos**.
 
 ## Lo que ya está configurado
 
@@ -19,7 +19,7 @@ Estado de este paquete: **proyecto iOS preparado; la compilación se ejecutará 
 
 1. Una suscripción activa al Apple Developer Program.
 2. Crear la ficha de la aplicación en App Store Connect.
-3. Crear el certificado de distribución, el perfil de App Store y una clave de la API de App Store Connect para la compilación remota.
+3. Mantener vigentes el certificado de distribución y la clave de la API de App Store Connect para la compilación remota.
 4. Publicar `privacy.html` y `support.html` en las URL indicadas en `APP_STORE_METADATA.md` antes de enviar la aplicación a revisión.
 5. Preparar capturas reales en los tamaños solicitados por App Store Connect.
 
@@ -36,7 +36,7 @@ Desde el 28 de abril de 2026, Apple exige Xcode 26 y el SDK de iOS 26 para nueva
 
 El flujo `.github/workflows/ios-xcode26.yml` ejecuta las pruebas, sincroniza Capacitor y compila la aplicación en un equipo remoto `macos-26` con Xcode 26.6. No usa credenciales de Apple y puede comprobar el proyecto antes de terminar la membresía.
 
-El segundo flujo, separado y manual, ya está preparado en `.github/workflows/ios-testflight.yml`. Cuando la cuenta Apple Developer esté activa, firmará el archivo y, solo si se selecciona expresamente la opción `upload`, lo subirá a TestFlight. Los certificados, perfiles y claves se guardarán únicamente como secretos cifrados de GitHub; nunca dentro del repositorio.
+El segundo flujo, separado y manual, está preparado en `.github/workflows/ios-testflight.yml`. Firma automáticamente con el perfil vigente y, solo si se selecciona expresamente la opción `upload`, sube el IPA a TestFlight. Los certificados y claves se guardan únicamente como secretos cifrados de GitHub; nunca dentro del repositorio.
 
 ## Alta de Apple Developer desde el iPhone
 
@@ -50,7 +50,7 @@ No hace falta un Mac para registrarse. Apple recomienda completar la identidad d
    - **Organización:** aparece la razón social, pero Apple solicita entidad legal, web pública, autoridad de firma y número D-U-N-S.
 5. Completa tú mismo la fotografía del documento de identidad, la aceptación del contrato y la suscripción anual.
 
-Apple indica una cuota anual de 99 USD o su equivalente local. La compra se renueva automáticamente si el alta se realiza desde la app. Referencia: [alta y verificación con Apple Developer](https://developer.apple.com/help/account/membership/enrolling-in-the-app/).
+Apple indica una cuota anual de 99 USD o su equivalente local. La suscripción se renueva automáticamente si el alta se realiza desde la app. Referencia: [alta y verificación con Apple Developer](https://developer.apple.com/help/account/membership/enrolling-in-the-app/).
 
 ## Compilar en un Mac, solo si alguna vez se dispone de uno
 
@@ -68,7 +68,7 @@ En Xcode:
 1. Selecciona el proyecto **App** y el destino **App**.
 2. En **Signing & Capabilities**, activa la firma automática y elige tu equipo Apple Developer.
 3. Confirma que el Bundle Identifier sea `com.carlosgarau.lacompra`. Si ya estuviera ocupado en tu cuenta, cambia el identificador tanto en Xcode como en `capacitor.config.json`.
-4. Conecta un iPhone y comprueba voz, notificaciones, compartir por WhatsApp, desbloqueo con contraseña y actualización entre dos dispositivos.
+4. Conecta un iPhone y comprueba voz, notificaciones, acceso con Apple, compartir por WhatsApp y actualización entre dos dispositivos.
 5. Selecciona **Any iOS Device (arm64)** y usa **Product > Archive**.
 6. En Organizer, ejecuta **Validate App** y después **Distribute App > App Store Connect > Upload**.
 
@@ -81,20 +81,20 @@ En Xcode:
 - SKU sugerido: `LA-COMPRA-IOS-001`.
 - Acceso de usuarios: completo.
 - Precio inicial propuesto: gratis.
-- No requiere usuario de demostración porque no existe inicio de sesión.
+- No requiere usuario de demostración para las funciones locales. Para revisar el uso compartido, Apple puede usar <strong>Iniciar sesión con Apple</strong>.
 
-Apple permite que una aplicación sin funciones importantes ligadas a una cuenta se use sin inicio de sesión. Si más adelante se añade «Acceder con Google», habrá que ofrecer también una opción equivalente que cumpla la regla 4.8 —normalmente «Iniciar sesión con Apple»— y permitir eliminar la cuenta desde la aplicación. Consulta las [App Review Guidelines](https://developer.apple.com/app-store/review/guidelines/).
+La aplicación ofrece <strong>Iniciar sesión con Apple</strong> como equivalente a Google y permite eliminar la cuenta y sus datos desde Ajustes, de acuerdo con la regla 4.8. Las funciones personales siguen disponibles sin iniciar sesión. Consulta las [App Review Guidelines](https://developer.apple.com/app-store/review/guidelines/).
 
 ## Privacidad y cifrado
 
 En App Store Connect, indica:
 
 - Seguimiento: no.
-- Datos vinculados a la identidad: no.
+- Datos vinculados a la identidad: nombre, correo, identificador de usuario y contenido compartido cuando se inicia sesión.
 - Otros contenidos del usuario: sí, solo cuando se activa una lista compartida; finalidad «Funcionalidad de la app».
 - Historial de compras: sí, solo cuando se activa una lista compartida; finalidades «Personalización del producto» y «Funcionalidad de la app».
 - Identificador del dispositivo: identificador aleatorio de la instalación, no vinculado; finalidad «Funcionalidad de la app».
-- Publicidad, analítica, contactos, ubicación y correo electrónico: no.
+- Publicidad, analítica, contactos y ubicación: no. El correo se recibe del proveedor elegido únicamente para autenticación y miembros.
 
 La etiqueta de privacidad se publicó en App Store Connect el 12 de agosto de 2026. La app se configuró como gratuita, pública y disponible al publicarse en 175 países o regiones, con España como región base.
 
@@ -104,10 +104,10 @@ La aplicación usa AES-GCM mediante Web Crypto y HTTPS, tecnologías estándar p
 
 - Ejecutar `pnpm check` sin errores.
 - Probar la compilación Release en un iPhone físico.
-- Confirmar que la contraseña nunca aparece en el enlace compartido.
-- Verificar sincronización entre dos instalaciones con la misma contraseña.
+- Confirmar que cada invitación permite acceder únicamente a la lista elegida.
+- Verificar sincronización entre dos cuentas y retirada de acceso desde Miembros.
 - Denegar micrófono y notificaciones y comprobar que la app sigue siendo utilizable por teclado.
-- Confirmar que «Borrar lista e historial» y «Eliminar lista» eliminan también las copias compartidas correspondientes.
+- Confirmar que «Eliminar mi cuenta y mis datos» borra la cuenta y las listas compartidas de su propiedad.
 - Revisar los textos de permisos y la política publicada.
 - Completar edad, categoría, derechos de contenido, DSA y disponibilidad en App Store Connect.
 - Subir las capturas, seleccionar la compilación y enviar manualmente a App Review.
