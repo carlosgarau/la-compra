@@ -4,7 +4,7 @@
   "private": true,
   "packageManager": "pnpm@11.16.0",
   "type": "module",
-  "description": "Lista de la compra familiar para web e iPhone.",
+  "description": "Lista familiar para web e iPhone.",
   "scripts": {
     "test": "node --test tests.mjs",
     "check": "node --check app.mjs && node --check family-sync.mjs && node --check secure-sharing.mjs && node --check native-bridge.mjs && node --test tests.mjs",
@@ -28,3 +28,4 @@
     "@capacitor/ios": "8.5.0"
   }
 }
+
