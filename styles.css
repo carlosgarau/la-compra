@@ -191,7 +191,10 @@ button:focus-visible, input:focus-visible { outline: 3px solid rgba(40, 95, 67, 
 .expiration-card.soon b { color: #8f6724; }
 .expiration-card.urgent b { color: #a64538; }
 .expiration-card small { margin-top: 3px; color: var(--muted); font-size: 9px; line-height: 1.35; }
-.expiration-card button { min-height: 36px; padding: 0 11px; border: 0; border-radius: 11px; color: var(--green); background: #edf0e5; font-size: 10px; font-weight: 800; cursor: pointer; }
+.expiration-card-actions { display: grid; gap: 6px; }
+.expiration-card-actions button { min-height: 36px; padding: 0 11px; border: 0; border-radius: 11px; color: var(--green); background: #edf0e5; font-size: 10px; font-weight: 800; cursor: pointer; }
+.expiration-card-actions .expiration-edit { color: #fff; background: var(--green); }
+.suggestion-card.purchased { background: linear-gradient(145deg, #fffdf8, #edf3e2); }
 
 .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; margin-bottom: 28px; }
 .stats-grid article { padding: 19px; border: 1px solid var(--line); border-radius: 18px; background: rgba(255,253,248,.8); }
@@ -332,7 +335,7 @@ input[role="switch"]:checked::after { transform: translateX(18px); }
   .bottom-nav { width: calc(100% - 22px); }
   .quantity-control { display: flex; }
   .expiration-card { grid-template-columns: auto minmax(0, 1fr); }
-  .expiration-card button { grid-column: 1 / -1; }
+  .expiration-card-actions { grid-column: 1 / -1; grid-template-columns: 1fr 1fr; }
   .expiration-date-dialog { width: calc(100% - 20px); max-height: calc(100dvh - max(20px, env(safe-area-inset-top))); margin: max(10px, env(safe-area-inset-top)) auto auto; border-radius: 24px; }
   .expiration-dialog-header { padding: 18px 19px 16px; }
   .expiration-dialog-body { padding: 17px 19px calc(19px + env(safe-area-inset-bottom)); }
