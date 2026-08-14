@@ -1,4 +1,4 @@
-name: Publicar La compra
+name: Publicar Â¿QuÃ© te falta?
 
 on:
   push:
@@ -21,16 +21,17 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
-      - name: Descargar aplicación
+      - name: Descargar aplicaciÃ³n
         uses: actions/checkout@v4
       - name: Preparar GitHub Pages
         uses: actions/configure-pages@v5
         with:
           enablement: true
-      - name: Empaquetar aplicación
+      - name: Empaquetar aplicaciÃ³n
         uses: actions/upload-pages-artifact@v3
         with:
           path: .
       - name: Publicar
         id: deployment
         uses: actions/deploy-pages@v4
+
