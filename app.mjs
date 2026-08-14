@@ -318,10 +318,10 @@ function askForSharedPassword({ mode = "unlock", name = "la lista", wrong = fals
   const creating = mode === "create";
   $("#sharedPasswordTitle").textContent = creating ? `Protege ${name}` : `Abre ${name}`;
   $("#sharedPasswordText").textContent = wrong
-    ? "Esa contraseÃ±a no abre la lista. CompruÃ©bala y vuelve a intentarlo."
+    ? "Esa contraseña no abre la lista. Compruébala y vuelve a intentarlo."
     : creating
-      ? "El enlace se puede enviar por WhatsApp, pero la contraseÃ±a debes comunicarla aparte."
-      : "Introduce la contraseÃ±a que te ha enviado la persona que comparte la lista.";
+      ? "El enlace se puede enviar por WhatsApp, pero la contraseña debes comunicarla aparte."
+      : "Introduce la contraseña que te ha enviado la persona que comparte la lista.";
   $("#sharedPasswordConfirmField").hidden = !creating;
   $("#sharedPasswordSave").textContent = creating ? "Proteger y compartir" : "Abrir lista";
   $("#sharedPasswordInput").value = "";
@@ -354,7 +354,7 @@ function submitSharedPassword(event) {
     return;
   }
   if (sharedPasswordPrompt.mode === "create" && password !== confirmation.value.normalize("NFC")) {
-    confirmation.setCustomValidity("Las dos contraseÃ±as no coinciden");
+    confirmation.setCustomValidity("Las dos contraseñas no coinciden");
     confirmation.reportValidity();
     confirmation.setCustomValidity("");
     return;
@@ -370,7 +370,7 @@ function cancelSharedPassword() {
   const prompt = sharedPasswordPrompt;
   sharedPasswordPrompt = null;
   $("#sharedPasswordDialog").close();
-  prompt.reject(new DOMException("AcciÃ³n cancelada", "AbortError"));
+  prompt.reject(new DOMException("Acción cancelada", "AbortError"));
 }
 
 function requestSharedAccess(error, { shareId, name, restart }) {
@@ -396,22 +396,22 @@ function renderFamilySharing() {
   if (!status || !shareButton || !disconnectButton || !badge) return;
 
   const copy = {
-    local: "Esta copia solo estÃ¡ en este mÃ³vil.",
-    connecting: "Conectando con vuestra lista familiarâ€¦",
-    synced: "Compartida y sincronizada entre los dos mÃ³viles.",
-    offline: "Sin conexiÃ³n. Los cambios se sincronizarÃ¡n cuando vuelva Internet.",
+    local: "Esta copia solo está en este móvil.",
+    connecting: "Conectando con vuestra lista familiar…",
+    synced: "Compartida y sincronizada entre los dos móviles.",
+    offline: "Sin conexión. Los cambios se sincronizarán cuando vuelva Internet.",
   };
-  copy.locked = "La lista estÃ¡ protegida. Introduce la contraseÃ±a para sincronizarla.";
+  copy.locked = "La lista está protegida. Introduce la contraseña para sincronizarla.";
   status.textContent = copy[familyStatus] || copy.local;
   shareButton.textContent = familyStatus === "locked"
-    ? "Introducir contraseÃ±a"
+    ? "Introducir contraseña"
     : familyId ? "Compartir enlace familiar" : "Crear lista compartida";
   disconnectButton.hidden = !familyId;
   badge.hidden = !familyId;
   badge.className = `family-badge ${familyStatus}`;
   badge.textContent = familyStatus === "synced"
     ? "Compartida"
-    : familyStatus === "offline" ? "Sin conexiÃ³n" : familyStatus === "locked" ? "Protegida" : "Conectando";
+    : familyStatus === "offline" ? "Sin conexión" : familyStatus === "locked" ? "Protegida" : "Conectando";
 }
 
 function setFamilyStatus(status) {
@@ -539,7 +539,7 @@ function applyRemoteFamilyState(remoteState, { initial = false } = {}) {
   initializeAllSharedListSyncs();
   render();
   if (recoveredLocalData) showToast("He unido la lista antigua con la familiar");
-  else if (!initial) showToast("Lista actualizada desde el otro mÃ³vil");
+  else if (!initial) showToast("Lista actualizada desde el otro móvil");
 }
 
 async function initializeFamilySharing() {
@@ -584,12 +584,12 @@ async function shareFamilyLink() {
   }
   storeFamilyAccess(familyId);
   await initializeFamilySharing();
-  if (familyStatus === "locked") throw new Error("La contraseÃ±a no abre la lista familiar");
+  if (familyStatus === "locked") throw new Error("La contraseña no abre la lista familiar");
   await familySync?.writeNow(sharedStateFrom(state));
   const url = makeFamilyShareUrl(SHARE_BASE_URL, familyId);
   const shareData = {
     title: "Nuestra lista familiar",
-    text: "Abre este enlace para compartir y actualizar nuestra lista familiar. Te enviarÃ© la contraseÃ±a aparte.",
+    text: "Abre este enlace para compartir y actualizar nuestra lista familiar. Te enviaré la contraseña aparte.",
     url,
   };
   try {
@@ -600,14 +600,14 @@ async function shareFamilyLink() {
 }
 
 function disconnectFamily() {
-  if (!confirm("Â¿Dejar de compartir esta lista en este mÃ³vil? ConservarÃ¡s una copia de lo que hay ahora.")) return;
+  if (!confirm("¿Dejar de compartir esta lista en este móvil? Conservarás una copia de lo que hay ahora.")) return;
   familySync?.stop();
   familySync = null;
   forgetSharedPassword(familyId);
   familyId = "";
   clearFamilyAccess();
   setFamilyStatus("local");
-  showToast("Este mÃ³vil ya no comparte la lista");
+  showToast("Este móvil ya no comparte la lista");
 }
 
 function selectList(listId) {
@@ -653,7 +653,7 @@ function saveSpecialList(event) {
     state.specialLists.push(list);
     activeListId = list.id;
     saveState();
-    showToast(`${name} estÃ¡ preparada`);
+    showToast(`${name} está preparada`);
   }
 
   editingSpecialListId = "";
@@ -663,7 +663,7 @@ function saveSpecialList(event) {
 
 function deleteSpecialList() {
   const list = specialListById(activeListId);
-  if (!list || !confirm(`Â¿Eliminar la lista â€œ${list.name}â€? Tu lista habitual no cambiarÃ¡.`)) return;
+  if (!list || !confirm(`¿Eliminar la lista “${list.name}”? Tu lista habitual no cambiará.`)) return;
   const shareId = normalizeFamilyId(list.shareId);
   sharedSyncEntry(list.id)?.sync.stop();
   sharedListSyncs.delete(list.id);
@@ -695,13 +695,13 @@ async function shareSpecialList() {
   }
   await restartSpecialListSync(list.id);
   const entry = sharedSyncEntry(list.id);
-  if (entry?.status === "locked") throw new Error("La contraseÃ±a no abre esta lista");
+  if (entry?.status === "locked") throw new Error("La contraseña no abre esta lista");
   await entry?.sync.writeNow(sharedListPayload(list));
 
   const url = makeSharedListUrl(SHARE_BASE_URL, list.shareId);
   const shareData = {
     title: `Lista ${list.name}`,
-    text: `Puedes ver y actualizar Ãºnicamente la lista â€œ${list.name}â€ desde este enlace. Te enviarÃ© la contraseÃ±a aparte.`,
+    text: `Puedes ver y actualizar únicamente la lista “${list.name}” desde este enlace. Te enviaré la contraseña aparte.`,
     url,
   };
   try {
@@ -738,7 +738,7 @@ function render() {
   const pending = listItems().filter((item) => !item.checked).length;
   $("#headerSummary").textContent = activeListId === "main"
     ? (pending ? `${pending} ${pending === 1 ? "producto pendiente" : "productos pendientes"}` : "Tu lista familiar")
-    : `${list?.name || "Lista compartida"} Â· ${pending} ${pending === 1 ? "pendiente" : "pendientes"}`;
+    : `${list?.name || "Lista compartida"} · ${pending} ${pending === 1 ? "pendiente" : "pendientes"}`;
 }
 
 function renderList() {
@@ -751,10 +751,10 @@ function renderList() {
   $("#shoppingStart").hidden = activeListId !== "main";
   $("#shoppingStart").disabled = !items.length;
   if (!document.body.classList.contains("listening")) {
-    $("#voiceTitle").textContent = activeListId === "main" ? "Â¿QuÃ© hace falta?" : `Â¿QuÃ© aÃ±adimos a ${list.name}?`;
+    $("#voiceTitle").textContent = activeListId === "main" ? "¿Qué hace falta?" : `¿Qué añadimos a ${list.name}?`;
     $("#voiceHint").textContent = activeListId === "main"
-      ? "Toca el micrÃ³fono y di â€œleche, pan y dos kilos de patatasâ€."
-      : `Lo que aÃ±adas quedarÃ¡ solo en la lista ${list.name}.`;
+      ? "Toca el micrófono y di “leche, pan y dos kilos de patatas”."
+      : `Lo que añadas quedará solo en la lista ${list.name}.`;
   }
 
   if (!items.length) {
@@ -764,8 +764,8 @@ function renderList() {
           <span></span><span></span><span></span>
           ${icon("basket")}
         </div>
-        <h3>${activeListId === "main" ? "La cesta estÃ¡ esperando" : `${escapeHtml(list.name)} estÃ¡ vacÃ­a`}</h3>
-        <p>${activeListId === "main" ? "Todo lo que aÃ±adas se ordenarÃ¡ automÃ¡ticamente por familias." : "AÃ±ade aquÃ­ lo necesario para esta ocasiÃ³n. No se mezclarÃ¡ con tu lista habitual."}</p>
+        <h3>${activeListId === "main" ? "La cesta está esperando" : `${escapeHtml(list.name)} está vacía`}</h3>
+        <p>${activeListId === "main" ? "Todo lo que añadas se ordenará automáticamente por familias." : "Añade aquí lo necesario para esta ocasión. No se mezclará con tu lista habitual."}</p>
       </div>`;
     return;
   }
@@ -795,11 +795,11 @@ function renderItem(item) {
       </button>
       <div class="item-copy"><strong>${escapeHtml(item.name)}</strong>${amount ? `<small>${escapeHtml(amount)}</small>` : ""}</div>
       <div class="quantity-control">
-        <button type="button" data-action="decrease" aria-label="Quitar uno">âˆ’</button>
+        <button type="button" data-action="decrease" aria-label="Quitar uno">−</button>
         <span>${item.quantity}</span>
-        <button type="button" data-action="increase" aria-label="AÃ±adir uno">+</button>
+        <button type="button" data-action="increase" aria-label="Añadir uno">+</button>
       </div>
-      <button class="item-remove" type="button" data-action="remove" aria-label="Eliminar ${escapeHtml(item.name)}">Ã—</button>
+      <button class="item-remove" type="button" data-action="remove" aria-label="Eliminar ${escapeHtml(item.name)}">×</button>
     </article>`;
 }
 
@@ -814,7 +814,7 @@ function renderIdeas() {
 
   const blocks = [];
   if (remembered.length) {
-    blocks.push(suggestionBlock("Puede que falte", "SegÃºn vuestro historial", remembered, "history"));
+    blocks.push(suggestionBlock("Puede que falte", "Según vuestro historial", remembered, "history"));
   }
   if (previous.length) {
     const cards = previous.map((purchase) => ({
@@ -832,8 +832,8 @@ function renderIdeas() {
     blocks.push(`
       <div class="ideas-empty">
         ${icon("sparkle")}
-        <h3>AÃºn no hay compras anteriores</h3>
-        <p>Cuando termines una compra, aquÃ­ podrÃ¡s recuperar sus productos con un toque.</p>
+        <h3>Aún no hay compras anteriores</h3>
+        <p>Cuando termines una compra, aquí podrás recuperar sus productos con un toque.</p>
       </div>`);
   }
   content.innerHTML = blocks.join("");
@@ -842,13 +842,13 @@ function renderIdeas() {
 function previousPurchasesBlock(purchases) {
   return `
     <section class="suggestion-section">
-      <div class="suggestion-heading"><div><h2>Comprados anteriormente</h2><p>Productos recientes que no estÃ¡n ahora en la lista</p></div></div>
+      <div class="suggestion-heading"><div><h2>Comprados anteriormente</h2><p>Productos recientes que no están ahora en la lista</p></div></div>
       <div class="suggestion-grid">
         ${purchases.map((purchase) => `
           <article class="suggestion-card purchased">
             <span class="suggestion-art">${icon(CATEGORY_META[purchase.category]?.icon || "basket")}</span>
             <div><strong>${escapeHtml(purchase.name)}</strong><small>${escapeHtml(purchase.reason)}</small></div>
-            <button class="suggestion-add" type="button" data-purchased-add="${escapeHtml(purchase.key)}">AÃ±adir <span>+</span></button>
+            <button class="suggestion-add" type="button" data-purchased-add="${escapeHtml(purchase.key)}">Añadir <span>+</span></button>
           </article>`).join("")}
       </div>
     </section>`;
@@ -869,21 +869,21 @@ function renderExpirations() {
       <div class="ideas-empty expiration-empty">
         ${icon("snow")}
         <h3>No hay caducidades pendientes</h3>
-        <p>AÃ±adid aquÃ­ cualquier alimento delicado, aunque no estuviera en la lista habitual.</p>
+        <p>Añadid aquí cualquier alimento delicado, aunque no estuviera en la lista habitual.</p>
       </div>`;
 }
 
 function expirationLabel(daysLeft) {
-  if (daysLeft < 0) return `CaducÃ³ hace ${Math.abs(daysLeft)} ${Math.abs(daysLeft) === 1 ? "dÃ­a" : "dÃ­as"}`;
+  if (daysLeft < 0) return `Caducó hace ${Math.abs(daysLeft)} ${Math.abs(daysLeft) === 1 ? "día" : "días"}`;
   if (daysLeft === 0) return "Caduca hoy";
-  if (daysLeft === 1) return "Caduca maÃ±ana";
-  return `Caduca en ${daysLeft} dÃ­as`;
+  if (daysLeft === 1) return "Caduca mañana";
+  return `Caduca en ${daysLeft} días`;
 }
 
 function expirationBlock(expirations, showHeading = true) {
   return `
     <section class="expiration-section">
-      ${showHeading ? '<div class="suggestion-heading"><div><h2>Caducidades</h2><p>Lo mÃ¡s delicado, ordenado por urgencia</p></div></div>' : ""}
+      ${showHeading ? '<div class="suggestion-heading"><div><h2>Caducidades</h2><p>Lo más delicado, ordenado por urgencia</p></div></div>' : ""}
       <div class="expiration-list">
         ${expirations.map((entry) => {
           const urgency = entry.daysLeft <= 1 ? "urgent" : entry.daysLeft <= 3 ? "soon" : "";
@@ -912,10 +912,10 @@ function suggestionBlock(title, subtitle, suggestions, kind) {
       <div class="suggestion-grid">
         ${suggestions.map((suggestion) => `
           <article class="suggestion-card ${kind}">
-            <button class="suggestion-dismiss" type="button" data-dismiss="${escapeHtml(suggestion.key)}" aria-label="No sugerir este mes">Ã—</button>
+            <button class="suggestion-dismiss" type="button" data-dismiss="${escapeHtml(suggestion.key)}" aria-label="No sugerir este mes">×</button>
             <span class="suggestion-art">${icon(suggestion.category === "Fruta y verdura" ? "leaf" : (CATEGORY_META[suggestion.category]?.icon || "basket"))}</span>
             <div><strong>${escapeHtml(suggestion.name)}</strong><small>${escapeHtml(suggestion.reason)}</small></div>
-            <button class="suggestion-add" type="button" data-suggest-key="${escapeHtml(suggestion.key)}" data-suggest-name="${escapeHtml(suggestion.name)}">AÃ±adir <span>+</span></button>
+            <button class="suggestion-add" type="button" data-suggest-key="${escapeHtml(suggestion.key)}" data-suggest-name="${escapeHtml(suggestion.name)}">Añadir <span>+</span></button>
           </article>`).join("")}
       </div>
     </section>`;
@@ -929,11 +929,11 @@ function renderHistory() {
   $("#historyStats").innerHTML = `
     <article><strong>${unique}</strong><span>${unique === 1 ? "producto recordado" : "productos recordados"}</span></article>
     <article><strong>${purchases}</strong><span>${purchases === 1 ? "producto comprado" : "productos comprados"}</span></article>
-    <article class="wide"><strong>${mostRequested ? escapeHtml(mostRequested.name) : "â€”"}</strong><span>lo mÃ¡s pedido</span></article>`;
+    <article class="wide"><strong>${mostRequested ? escapeHtml(mostRequested.name) : "—"}</strong><span>lo más pedido</span></article>`;
 
   const content = $("#historyContent");
   if (!state.purchases.length) {
-    content.innerHTML = `<div class="history-empty"><h3>TodavÃ­a no hay compras guardadas</h3><p>En la tienda, marca lo que metas en la cesta y pulsa â€œTerminar compraâ€.</p></div>`;
+    content.innerHTML = `<div class="history-empty"><h3>Todavía no hay compras guardadas</h3><p>En la tienda, marca lo que metas en la cesta y pulsa “Terminar compra”.</p></div>`;
     return;
   }
 
@@ -958,7 +958,7 @@ function renderShoppingDock() {
 
 function addEntries(entries, options = {}) {
   if (!entries.length) {
-    showToast("No he encontrado ningÃºn producto");
+    showToast("No he encontrado ningún producto");
     return;
   }
 
@@ -979,7 +979,7 @@ function addEntries(entries, options = {}) {
   render();
 
   if (addedNames.length) {
-    const message = addedNames.length === 1 ? `He aÃ±adido ${addedNames[0]}` : `He aÃ±adido ${addedNames.length} productos`;
+    const message = addedNames.length === 1 ? `He añadido ${addedNames[0]}` : `He añadido ${addedNames.length} productos`;
     showToast(message);
     if (options.fromVoice) speak(message);
   }
@@ -995,10 +995,10 @@ function showNextDuplicate() {
     showNextDuplicate();
     return;
   }
-  $("#duplicateTitle").textContent = `Â¿Compramos mÃ¡s ${existing.name.toLocaleLowerCase("es")}?`;
-  $("#duplicateText").textContent = `Ya estaba en la lista${existing.quantity > 1 ? ` con cantidad ${existing.quantity}` : ""}. Puedo aumentar la cantidad o dejarlo como estÃ¡.`;
+  $("#duplicateTitle").textContent = `¿Compramos más ${existing.name.toLocaleLowerCase("es")}?`;
+  $("#duplicateText").textContent = `Ya estaba en la lista${existing.quantity > 1 ? ` con cantidad ${existing.quantity}` : ""}. Puedo aumentar la cantidad o dejarlo como está.`;
   $("#duplicateDialog").showModal();
-  speak(`Ya tenÃ­as ${existing.name} en la lista. Â¿Compramos mÃ¡s?`);
+  speak(`Ya tenías ${existing.name} en la lista. ¿Compramos más?`);
 }
 
 function resolveDuplicate(addMore) {
@@ -1018,8 +1018,8 @@ function resolveDuplicate(addMore) {
 
 function enterShoppingMode() {
   if (!state.items.length) {
-    showToast("La lista estÃ¡ vacÃ­a");
-    speak("La lista estÃ¡ vacÃ­a");
+    showToast("La lista está vacía");
+    speak("La lista está vacía");
     return;
   }
   shoppingMode = true;
@@ -1034,14 +1034,14 @@ function requestFinishShopping() {
   const checked = state.items.filter((item) => item.checked);
   if (!checked.length) {
     showToast("Marca primero lo que has metido en la cesta");
-    speak("AÃºn no has marcado ningÃºn producto");
+    speak("Aún no has marcado ningún producto");
     return;
   }
   const pending = state.items.length - checked.length;
   const checkedLabel = `${checked.length} ${checked.length === 1 ? "producto" : "productos"}`;
   $("#finishText").textContent = pending
-    ? `GuardarÃ© ${checkedLabel} en el historial y dejarÃ© ${pending} pendientes en la lista.`
-    : `GuardarÃ© ${checked.length === 1 ? "el" : "los"} ${checkedLabel} en el historial y dejarÃ© la lista preparada para la prÃ³xima vez.`;
+    ? `Guardaré ${checkedLabel} en el historial y dejaré ${pending} pendientes en la lista.`
+    : `Guardaré ${checked.length === 1 ? "el" : "los"} ${checkedLabel} en el historial y dejaré la lista preparada para la próxima vez.`;
   $("#finishDialog").showModal();
 }
 
@@ -1060,7 +1060,7 @@ function finishShopping() {
     expirationPromptTotal = delicate.length;
     expirationPromptPosition = 0;
     showToast("Compra guardada. Revisemos las caducidades");
-    speak("Compra guardada. Ahora te preguntarÃ© las caducidades de los productos mÃ¡s delicados.");
+    speak("Compra guardada. Ahora te preguntaré las caducidades de los productos más delicados.");
     showNextExpirationPrompt();
   } else {
     showToast("Compra guardada. Ya puedo aprender de ella");
@@ -1084,7 +1084,7 @@ function saveExtraPurchase(entry, expiresOn, askPermission = false) {
   navigate("expiration");
   const message = `Caducidad guardada para ${entry.name}`;
   showToast(message);
-  speak(`${message}. Te avisarÃ© cuando falten tres dÃ­as y un dÃ­a.`);
+  speak(`${message}. Te avisaré cuando falten tres días y un día.`);
   if (askPermission) requestNotificationPermission();
   setTimeout(checkExpirationAlerts, 150);
 }
@@ -1107,7 +1107,7 @@ function saveManualExpiration(event) {
   render();
   productInput.value = "";
   dateInput.value = "";
-  showToast(`Caducidad aÃ±adida para ${entry.name}`);
+  showToast(`Caducidad añadida para ${entry.name}`);
   requestNotificationPermission();
   setTimeout(checkExpirationAlerts, 150);
 }
@@ -1117,7 +1117,7 @@ function openExtraExpirationDialog(command = {}) {
   $("#extraExpirationInput").value = command.expiresOn || "";
   $("#extraExpirationInput").min = localDateValue();
   $("#extraExpirationDialog").showModal();
-  const missing = command.entry ? "Â¿CuÃ¡ndo caduca?" : "Â¿QuÃ© producto extra has comprado y cuÃ¡ndo caduca?";
+  const missing = command.entry ? "¿Cuándo caduca?" : "¿Qué producto extra has comprado y cuándo caduca?";
   speak(missing);
   setTimeout(() => (command.entry ? $("#extraExpirationInput") : $("#extraProductInput")).focus(), 50);
 }
@@ -1164,8 +1164,8 @@ function showNextExpirationPrompt() {
   $("#expirationDateAmount").hidden = !amount;
   $("#expirationDateInput").value = "";
   $("#expirationDateInput").min = localDateValue();
-  $("#expirationDateTitle").textContent = "Â¿CuÃ¡ndo caduca?";
-  $("#expirationDateHelp").textContent = "Elige una opciÃ³n rÃ¡pida o abre el calendario. Te avisarÃ© 3 dÃ­as antes y de nuevo cuando falte 1.";
+  $("#expirationDateTitle").textContent = "¿Cuándo caduca?";
+  $("#expirationDateHelp").textContent = "Elige una opción rápida o abre el calendario. Te avisaré 3 días antes y de nuevo cuando falte 1.";
   $("#expirationDateSave").textContent = "Guardar fecha";
   $("#expirationDateSkip").textContent = "Este producto no necesita fecha";
   updateExpirationQuickDates();
@@ -1182,8 +1182,8 @@ function editExpirationDate(expirationId) {
   $("#expirationDateAmount").hidden = true;
   $("#expirationDateInput").value = expiration.expiresOn;
   $("#expirationDateInput").min = localDateValue();
-  $("#expirationDateTitle").textContent = "Â¿CuÃ¡l es la nueva fecha?";
-  $("#expirationDateHelp").textContent = "Al guardarla, sustituirÃ© la fecha anterior y actualizarÃ© los avisos de 3 dÃ­as y 1 dÃ­a.";
+  $("#expirationDateTitle").textContent = "¿Cuál es la nueva fecha?";
+  $("#expirationDateHelp").textContent = "Al guardarla, sustituiré la fecha anterior y actualizaré los avisos de 3 días y 1 día.";
   $("#expirationDateSave").textContent = "Actualizar fecha";
   $("#expirationDateSkip").textContent = "Cancelar";
   updateExpirationQuickDates();
@@ -1220,16 +1220,16 @@ function nativeExpirationNotificationEntries() {
         if (Number.isNaN(at.getTime())) return;
         at.setDate(at.getDate() - threshold);
         const freeze = threshold === 1 && isFreezable(entry)
-          ? " Si aÃºn lo tenÃ©is, conviene congelarlo hoy."
+          ? " Si aún lo tenéis, conviene congelarlo hoy."
           : "";
         entries.push({
           id: `${entry.id}-${threshold}`,
           expirationId: entry.id,
           threshold,
-          title: "Caducidad prÃ³xima",
+          title: "Caducidad próxima",
           body: threshold === 3
-            ? `${entry.name} caduca en tres dÃ­as. Â¿Ya lo habÃ©is consumido?`
-            : `${entry.name} caduca maÃ±ana. Â¿Ya lo habÃ©is consumido?${freeze}`,
+            ? `${entry.name} caduca en tres días. ¿Ya lo habéis consumido?`
+            : `${entry.name} caduca mañana. ¿Ya lo habéis consumido?${freeze}`,
           at: at.toISOString(),
         });
       });
@@ -1250,18 +1250,18 @@ async function requestNotificationPermission() {
     try {
       const granted = await NATIVE.requestNotificationPermission();
       if (granted) scheduleNativeExpirationNotifications(0);
-      else showToast("Te avisarÃ© al abrir Â¿QuÃ© te falta?");
+      else showToast("Te avisaré al abrir ¿Qué te falta?");
     } catch {
-      showToast("Te avisarÃ© al abrir Â¿QuÃ© te falta?");
+      showToast("Te avisaré al abrir ¿Qué te falta?");
     }
     return;
   }
   if (!("Notification" in window) || Notification.permission !== "default") return;
   try {
     const permission = await Notification.requestPermission();
-    if (permission !== "granted") showToast("Te avisarÃ© al abrir Â¿QuÃ© te falta?");
+    if (permission !== "granted") showToast("Te avisaré al abrir ¿Qué te falta?");
   } catch {
-    showToast("Te avisarÃ© al abrir Â¿QuÃ© te falta?");
+    showToast("Te avisaré al abrir ¿Qué te falta?");
   }
 }
 
@@ -1312,8 +1312,8 @@ function alertTimingText(entry) {
   const plural = entry.name.toLocaleLowerCase("es").endsWith("s");
   if (entry.daysLeft < 0) return plural ? "ya han caducado" : "ya ha caducado";
   if (entry.daysLeft === 0) return plural ? "caducan hoy" : "caduca hoy";
-  if (entry.daysLeft === 1) return plural ? "caducan maÃ±ana" : "caduca maÃ±ana";
-  return `${plural ? "caducan" : "caduca"} en ${entry.daysLeft} dÃ­as`;
+  if (entry.daysLeft === 1) return plural ? "caducan mañana" : "caduca mañana";
+  return `${plural ? "caducan" : "caduca"} en ${entry.daysLeft} días`;
 }
 
 function eatenPronoun(entry) {
@@ -1329,11 +1329,11 @@ async function showExpirationNotification(entry) {
   if (NATIVE.isNative) return;
   if (!("Notification" in window) || Notification.permission !== "granted") return;
   const freeze = entry.threshold === 1 && isFreezable(entry) ? " Si no, conviene congelarlo hoy." : "";
-  const body = `${entry.name} ${alertTimingText(entry)}. Â¿Ya te ${eatenPronoun(entry)} has comido?${freeze}`;
+  const body = `${entry.name} ${alertTimingText(entry)}. ¿Ya te ${eatenPronoun(entry)} has comido?${freeze}`;
   try {
     if ("serviceWorker" in navigator) {
       const registration = await navigator.serviceWorker.ready;
-      await registration.showNotification("Caducidad prÃ³xima", {
+      await registration.showNotification("Caducidad próxima", {
         body,
         icon: "./icon-192.png",
         badge: "./icon-192.png",
@@ -1341,10 +1341,10 @@ async function showExpirationNotification(entry) {
         data: { url: "./" },
       });
     } else {
-      new Notification("Caducidad prÃ³xima", { body, icon: "./icon-192.png" });
+      new Notification("Caducidad próxima", { body, icon: "./icon-192.png" });
     }
   } catch {
-    // El aviso dentro de la aplicaciÃ³n sigue disponible.
+    // El aviso dentro de la aplicación sigue disponible.
   }
 }
 
@@ -1353,11 +1353,11 @@ function showNextExpirationAlert() {
   if (!currentExpirationAlert) return;
   const timing = alertTimingText(currentExpirationAlert);
   const freeze = currentExpirationAlert.threshold === 1 && isFreezable(currentExpirationAlert);
-  const question = `Â¿Ya te ${eatenPronoun(currentExpirationAlert)} has comido?`;
+  const question = `¿Ya te ${eatenPronoun(currentExpirationAlert)} has comido?`;
   $("#expirationAlertTitle").textContent = `${currentExpirationAlert.name} ${timing}. ${question}`;
   $("#expirationAlertText").textContent = freeze
-    ? "Si todavÃ­a lo tenÃ©is, os recomiendo congelarlo hoy para no desperdiciarlo."
-    : "AsÃ­ dejarÃ© de avisaros si ya estÃ¡ consumido.";
+    ? "Si todavía lo tenéis, os recomiendo congelarlo hoy para no desperdiciarlo."
+    : "Así dejaré de avisaros si ya está consumido.";
   $("#expirationAlertDialog").showModal();
   speak(`${currentExpirationAlert.name} ${timing}. ${question}${freeze ? " Si no, te recomiendo congelarlo hoy." : ""}`);
   showExpirationNotification(currentExpirationAlert);
@@ -1390,8 +1390,8 @@ function readList(listId = activeListId) {
   const items = listItems(listId);
   const list = listRecordById(listId);
   if (!items.length) {
-    speak("La lista estÃ¡ vacÃ­a");
-    showToast("La lista estÃ¡ vacÃ­a");
+    speak("La lista está vacía");
+    showToast("La lista está vacía");
     return;
   }
   const names = items.filter((item) => !item.checked).map((item) => {
@@ -1400,7 +1400,7 @@ function readList(listId = activeListId) {
   });
   if (!names.length) {
     speak("Ya has marcado todos los productos de la lista");
-    showToast("Todos los productos estÃ¡n marcados");
+    showToast("Todos los productos están marcados");
     return;
   }
   speak(`En ${list?.name || "la lista"} hay: ${names.join(", ")}.`);
@@ -1447,11 +1447,11 @@ function finishNativeVoice(text = "", error = null) {
   if (!recognition?.native) return;
   recognition = null;
   document.body.classList.remove("listening");
-  $("#voiceTitle").textContent = "Â¿QuÃ© hace falta?";
-  $("#voiceHint").textContent = "Toca el micrÃ³fono y di â€œleche, pan y dos kilos de patatasâ€.";
+  $("#voiceTitle").textContent = "¿Qué hace falta?";
+  $("#voiceHint").textContent = "Toca el micrófono y di “leche, pan y dos kilos de patatas”.";
   if (error) {
     showToast(error.code === "not-allowed"
-      ? "Necesito permiso para usar el micrÃ³fono"
+      ? "Necesito permiso para usar el micrófono"
       : error.message || "No he podido entenderte. Prueba otra vez.");
   } else if (text.trim()) {
     handleVoiceText(text.trim());
@@ -1518,7 +1518,7 @@ function startVoice() {
   recognition.continuous = false;
   let finalText = "";
   document.body.classList.add("listening");
-  $("#voiceTitle").textContent = "Te escuchoâ€¦";
+  $("#voiceTitle").textContent = "Te escucho…";
   $("#voiceHint").textContent = "Puedes decir varios productos seguidos.";
   $("#liveTranscript").textContent = "";
   impact("medium");
@@ -1534,14 +1534,14 @@ function startVoice() {
   };
   recognition.onerror = (event) => {
     if (event.error !== "no-speech" && event.error !== "aborted") {
-      showToast(event.error === "not-allowed" ? "Necesito permiso para usar el micrÃ³fono" : "No he podido entenderte. Prueba otra vez.");
+      showToast(event.error === "not-allowed" ? "Necesito permiso para usar el micrófono" : "No he podido entenderte. Prueba otra vez.");
     }
   };
   recognition.onend = () => {
     recognition = null;
     document.body.classList.remove("listening");
-    $("#voiceTitle").textContent = "Â¿QuÃ© hace falta?";
-    $("#voiceHint").textContent = "Toca el micrÃ³fono y di â€œleche, pan y dos kilos de patatasâ€.";
+    $("#voiceTitle").textContent = "¿Qué hace falta?";
+    $("#voiceHint").textContent = "Toca el micrófono y di “leche, pan y dos kilos de patatas”.";
     if (finalText.trim()) handleVoiceText(finalText.trim());
     setTimeout(() => { $("#liveTranscript").textContent = ""; }, 3500);
   };
@@ -1583,7 +1583,7 @@ async function importData(file) {
     $("#settingsDialog").close();
     showToast("Copia restaurada");
   } catch {
-    showToast("La copia no es vÃ¡lida");
+    showToast("La copia no es válida");
   }
 }
 
@@ -1694,7 +1694,7 @@ $("#familyDisconnectButton").addEventListener("click", disconnectFamily);
 $("#exportButton").addEventListener("click", exportData);
 $("#importInput").addEventListener("change", (event) => event.target.files[0] && importData(event.target.files[0]));
 $("#clearButton").addEventListener("click", () => {
-  if (!confirm("Â¿Seguro que quieres borrar toda la lista y el historial?")) return;
+  if (!confirm("¿Seguro que quieres borrar toda la lista y el historial?")) return;
   state = createInitialState();
   saveState();
   render();
