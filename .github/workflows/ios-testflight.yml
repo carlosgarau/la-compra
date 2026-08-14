@@ -83,11 +83,84 @@ jobs:
           chmod 600 "$KEY_PATH"
           echo "APPLE_API_KEY_PATH=$KEY_PATH" >> "$GITHUB_ENV"
 
-      - name: Instalar certificado de distribución
+      - name: Descargar perfil App Store vigente
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PROFILE_PATH="$RUNNER_TEMP/app-store.mobileprovision"
+          python3 - <<'PY'
+          import base64, json, os, pathlib, subprocess, time, urllib.parse, urllib.request
+
+          def b64url(data):
+              return base64.urlsafe_b64encode(data).rstrip(b"=").decode("ascii")
+
+          def read_length(data, offset):
+              value = data[offset]
+              offset += 1
+              if value < 128:
+                  return value, offset
+              size = value & 0x7F
+              return int.from_bytes(data[offset:offset + size], "big"), offset + size
+
+          now = int(time.time())
+          header = {"alg": "ES256", "kid": os.environ["APPLE_API_KEY_ID"], "typ": "JWT"}
+          payload = {
+              "iss": os.environ["APPLE_API_ISSUER_ID"],
+              "iat": now - 30,
+              "exp": now + 900,
+              "aud": "appstoreconnect-v1",
+          }
+          message = f"{b64url(json.dumps(header, separators=(',', ':')).encode())}.{b64url(json.dumps(payload, separators=(',', ':')).encode())}".encode()
+          signature = subprocess.run(
+              ["openssl", "dgst", "-sha256", "-sign", os.environ["APPLE_API_KEY_PATH"]],
+              input=message,
+              check=True,
+              stdout=subprocess.PIPE,
+          ).stdout
+          if signature[0] != 0x30:
+              raise RuntimeError("Firma ECDSA no válida")
+          _, pos = read_length(signature, 1)
+          if signature[pos] != 0x02:
+              raise RuntimeError("Firma ECDSA sin componente R")
+          r_len, pos = read_length(signature, pos + 1)
+          r = int.from_bytes(signature[pos:pos + r_len], "big")
+          pos += r_len
+          if signature[pos] != 0x02:
+              raise RuntimeError("Firma ECDSA sin componente S")
+          s_len, pos = read_length(signature, pos + 1)
+          s = int.from_bytes(signature[pos:pos + s_len], "big")
+          token = f"{message.decode()}.{b64url(r.to_bytes(32, 'big') + s.to_bytes(32, 'big'))}"
+
+          query = urllib.parse.urlencode({
+              "filter[profileType]": "IOS_APP_STORE",
+              "filter[profileState]": "ACTIVE",
+              "filter[name]": "La compra App Store",
+              "fields[profiles]": "name,profileContent,uuid,profileState,profileType",
+              "limit": "200",
+          })
+          request = urllib.request.Request(
+              f"https://api.appstoreconnect.apple.com/v1/profiles?{query}",
+              headers={"Authorization": f"Bearer {token}"},
+          )
+          with urllib.request.urlopen(request, timeout=30) as response:
+              profiles = json.load(response).get("data", [])
+          matches = [
+              profile for profile in profiles
+              if profile.get("attributes", {}).get("name") == "La compra App Store"
+          ]
+          if len(matches) != 1:
+              raise RuntimeError(f"Se esperaba un perfil App Store activo y se encontraron {len(matches)}")
+          content = matches[0]["attributes"]["profileContent"]
+          pathlib.Path(os.environ["PROFILE_PATH"]).write_bytes(base64.b64decode(content))
+          PY
+          echo "PROFILE_PATH=$PROFILE_PATH" >> "$GITHUB_ENV"
+
+      - name: Instalar certificado y perfil de distribución
         shell: bash
         run: |
           set -euo pipefail
           export CERTIFICATE_PATH="$RUNNER_TEMP/distribution.p12"
+          export PROFILE_PLIST="$RUNNER_TEMP/app-store-profile.plist"
           export KEYCHAIN_PATH="$RUNNER_TEMP/app-signing.keychain-db"
           export KEYCHAIN_PASSWORD="$(uuidgen)"
 
@@ -111,8 +184,16 @@ jobs:
             -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
           security list-keychains -d user -s "$KEYCHAIN_PATH"
 
+          security cms -D -i "$PROFILE_PATH" > "$PROFILE_PLIST"
+          PROFILE_UUID="$(/usr/libexec/PlistBuddy -c 'Print :UUID' "$PROFILE_PLIST")"
+          PROFILE_NAME="$(/usr/libexec/PlistBuddy -c 'Print :Name' "$PROFILE_PLIST")"
+          mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
+          cp "$PROFILE_PATH" "$HOME/Library/MobileDevice/Provisioning Profiles/$PROFILE_UUID.mobileprovision"
+
           echo "KEYCHAIN_PATH=$KEYCHAIN_PATH" >> "$GITHUB_ENV"
           echo "KEYCHAIN_PASSWORD=$KEYCHAIN_PASSWORD" >> "$GITHUB_ENV"
+          echo "PROFILE_UUID=$PROFILE_UUID" >> "$GITHUB_ENV"
+          echo "PROFILE_NAME=$PROFILE_NAME" >> "$GITHUB_ENV"
 
       - name: Crear archivo firmado
         shell: bash
@@ -126,14 +207,7 @@ jobs:
             -configuration Release \
             -destination "generic/platform=iOS" \
             -archivePath build/LaCompra.xcarchive \
-            DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
-            PRODUCT_BUNDLE_IDENTIFIER="$BUNDLE_ID" \
             CURRENT_PROJECT_VERSION="$BUILD_NUMBER" \
-            CODE_SIGN_STYLE=Automatic \
-            -allowProvisioningUpdates \
-            -authenticationKeyPath "$APPLE_API_KEY_PATH" \
-            -authenticationKeyID "$APPLE_API_KEY_ID" \
-            -authenticationKeyIssuerID "$APPLE_API_ISSUER_ID" \
             clean archive | tee build/archive.log
 
       - name: Exportar IPA
@@ -150,9 +224,14 @@ jobs:
             <key>method</key>
             <string>app-store-connect</string>
             <key>signingStyle</key>
-            <string>automatic</string>
+            <string>manual</string>
             <key>teamID</key>
             <string>$APPLE_TEAM_ID</string>
+            <key>provisioningProfiles</key>
+            <dict>
+              <key>$BUNDLE_ID</key>
+              <string>$PROFILE_NAME</string>
+            </dict>
             <key>stripSwiftSymbols</key>
             <true/>
             <key>uploadSymbols</key>
@@ -165,11 +244,7 @@ jobs:
             -exportArchive \
             -archivePath build/LaCompra.xcarchive \
             -exportPath build/export \
-            -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" \
-            -allowProvisioningUpdates \
-            -authenticationKeyPath "$APPLE_API_KEY_PATH" \
-            -authenticationKeyID "$APPLE_API_KEY_ID" \
-            -authenticationKeyIssuerID "$APPLE_API_ISSUER_ID" | tee build/export.log
+            -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" | tee build/export.log
 
           IPA_PATH="$(find build/export -maxdepth 1 -name '*.ipa' -print -quit)"
           if [[ -z "$IPA_PATH" ]]; then
@@ -212,6 +287,9 @@ jobs:
         if: always()
         shell: bash
         run: |
+          if [[ -n "${PROFILE_UUID:-}" ]]; then
+            rm -f "$HOME/Library/MobileDevice/Provisioning Profiles/$PROFILE_UUID.mobileprovision"
+          fi
           if [[ -n "${APPLE_API_KEY_PATH:-}" ]]; then
             rm -f "$APPLE_API_KEY_PATH"
           fi
