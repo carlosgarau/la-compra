@@ -445,3 +445,9 @@ test("la actualización no recarga la app mientras se usa", async () => {
   assert.match(worker, /self\.clients\.claim\(\)/u);
 });
 
+test("el acceso web conserva la sesión en iPhone sin redirección completa", async () => {
+  const accountSharing = await readFile(new URL("./account-sharing.mjs", import.meta.url), "utf8");
+  assert.match(accountSharing, /signInWithPopup\(webAuth, authProvider\)/u);
+  assert.equal(accountSharing.includes("signInWithRedirect(webAuth, authProvider)"), false);
+});
+

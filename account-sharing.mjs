@@ -77,9 +77,14 @@ async function initializeWebAuth(onChange) {
     accountUser = normalizeAccountUser(user);
     onChange(accountUser);
   });
-  await authApi.getRedirectResult(webAuth).catch((error) => {
+  const redirectResult = await authApi.getRedirectResult(webAuth).catch((error) => {
     if (!String(error?.code || "").includes("no-auth-event")) throw error;
+    return null;
   });
+  if (redirectResult?.user) {
+    accountUser = normalizeAccountUser(redirectResult.user);
+    onChange(accountUser);
+  }
 }
 
 async function initializeNativeAuth(onChange) {
@@ -119,11 +124,6 @@ export async function signInWithAccount(provider) {
     authProvider.addScope("email");
     authProvider.addScope("name");
     authProvider.setCustomParameters({ locale: "es" });
-  }
-  const mobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-  if (mobile) {
-    await authApi.signInWithRedirect(webAuth, authProvider);
-    return null;
   }
   const result = await authApi.signInWithPopup(webAuth, authProvider);
   accountUser = normalizeAccountUser(result.user);
@@ -462,3 +462,4 @@ export async function saveAccountProfile() {
     body: { ...accountUser, updatedAt: Date.now() },
   });
 }
+
