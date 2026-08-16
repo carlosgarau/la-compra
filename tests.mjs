@@ -481,7 +481,15 @@ test("la interfaz móvil bloquea el desplazamiento lateral involuntario", async 
   const styles = await readFile(new URL("./styles.css", import.meta.url), "utf8");
   assert.match(styles, /overflow-x: clip/u);
   assert.match(styles, /overscroll-behavior-x: none/u);
-  assert.match(styles, /\.list-switcher \{ flex-basis: 100%; flex-wrap: wrap; overflow-x: visible;/u);
+  assert.match(styles, /\.list-selector-row \{ align-items: center; flex-wrap: nowrap;/u);
+  assert.match(styles, /\.list-switcher \{ flex: 1 1 auto; flex-wrap: wrap; overflow-x: visible;/u);
+});
+
+test("la cabecera de voz móvil deja espacio a la lista", async () => {
+  const styles = await readFile(new URL("./styles.css", import.meta.url), "utf8");
+  assert.match(styles, /\.voice-card \{ grid-template-columns: minmax\(0, 1fr\) 58px; min-height: 128px;/u);
+  assert.match(styles, /\.voice-card h1 \{ margin: 4px 0; font-size: 24px;/u);
+  assert.match(styles, /\.mic-button \{ width: 52px; height: 52px;/u);
 });
 
 test("ajustes respeta la zona visible del navegador móvil", async () => {
