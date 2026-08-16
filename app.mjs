@@ -20,7 +20,7 @@ import {
   registerRequest,
   shoppingSummary,
   updateExpiration,
-} from "./core.mjs?v=27";
+} from "./core.mjs?v=28";
 import {
   createFamilyId,
   createFamilySync,
@@ -39,11 +39,11 @@ import {
   normalizeFamilyId,
   sharedStateFrom,
   sharedListIdFromUrl,
-} from "./family-sync.mjs?v=27";
+} from "./family-sync.mjs?v=28";
 import {
   createSharedPasswordCodec,
   validateSharedPassword,
-} from "./secure-sharing.mjs?v=27";
+} from "./secure-sharing.mjs?v=28";
 import {
   ACCOUNT_ACTIVE_LIST_PREFIX,
   acceptListInvite,
@@ -69,7 +69,7 @@ import {
   signOutAccount,
   subscribeAccountList,
   updateAccountListState,
-} from "./account-sharing.mjs?v=27";
+} from "./account-sharing.mjs?v=28";
 
 const STORAGE_KEY = "la-compra-state-v1";
 const DATABASE_URL = "https://la-compra-familiar-default-rtdb.europe-west1.firebasedatabase.app";
@@ -136,6 +136,14 @@ let toastTimer = null;
 let nativeNotificationTimer = null;
 let sharedPasswordPrompt = null;
 const unlockingShareIds = new Set();
+
+function updateVisibleViewportHeight() {
+  const height = Math.round(window.visualViewport?.height || window.innerHeight);
+  document.documentElement.style.setProperty("--visible-viewport-height", `${height}px`);
+}
+
+updateVisibleViewportHeight();
+window.visualViewport?.addEventListener("resize", updateVisibleViewportHeight);
 
 function localCaptureMode() {
   if (!["localhost", "127.0.0.1"].includes(window.location.hostname)) return "";
@@ -2249,7 +2257,7 @@ window.addEventListener("beforeinstallprompt", (event) => event.preventDefault()
 async function initializeAppUpdates() {
   if (NATIVE.isNative) return;
   if (!("serviceWorker" in navigator)) return;
-  serviceWorkerRegistration = await navigator.serviceWorker.register("./service-worker.js?v=27");
+  serviceWorkerRegistration = await navigator.serviceWorker.register("./service-worker.js?v=28");
   serviceWorkerRegistration.update().catch(() => {});
 }
 

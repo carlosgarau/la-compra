@@ -466,3 +466,11 @@ test("la interfaz móvil bloquea el desplazamiento lateral involuntario", async 
   assert.match(styles, /\.list-switcher \{ flex-basis: 100%; flex-wrap: wrap; overflow-x: visible;/u);
 });
 
+test("ajustes respeta la zona visible del navegador móvil", async () => {
+  const app = await readFile(new URL("./app.mjs", import.meta.url), "utf8");
+  const styles = await readFile(new URL("./styles.css", import.meta.url), "utf8");
+  assert.match(app, /window\.visualViewport\?\.height/u);
+  assert.match(styles, /--visible-viewport-height/u);
+  assert.match(styles, /\.sheet-heading \{ position: sticky;/u);
+});
+

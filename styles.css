@@ -302,9 +302,9 @@ dialog::backdrop { background: rgba(26,35,29,.42); backdrop-filter: blur(5px); }
 .extra-purchase-fields label span { display: block; margin-bottom: 6px; color: var(--muted); font-size: 10px; font-weight: 750; }
 .extra-purchase-fields input { width: 100%; min-height: 47px; padding: 0 13px; border: 1px solid var(--line); border-radius: 13px; color: var(--ink); background: #fff; font: inherit; }
 
-.settings-sheet { position: fixed; top: auto; bottom: 0; max-height: 88vh; margin-bottom: 0; padding: 14px 23px calc(26px + env(safe-area-inset-bottom)); border-radius: 28px 28px 0 0; }
+.settings-sheet { position: fixed; top: auto; right: auto; bottom: 0; left: 50%; max-height: 88vh; max-height: calc(var(--visible-viewport-height, 100dvh) - max(24px, env(safe-area-inset-top))); margin: 0; padding: 14px 23px calc(26px + env(safe-area-inset-bottom)); overflow-y: auto; overscroll-behavior: contain; border-radius: 28px 28px 0 0; transform: translateX(-50%); }
 .sheet-handle { width: 43px; height: 5px; margin: 0 auto 18px; border-radius: 99px; background: #d2d2cc; }
-.sheet-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.sheet-heading { position: sticky; z-index: 4; top: -14px; display: flex; align-items: center; justify-content: space-between; margin: -14px -7px 16px; padding: 14px 7px 10px; background: linear-gradient(to bottom, var(--surface) 78%, rgba(255,253,248,0)); }
 .sheet-heading h2 { margin: 4px 0 0; font-family: Georgia, serif; font-size: 29px; font-weight: 500; }
 .sheet-heading .icon-button { font-size: 25px; }
 .setting-row { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 16px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
