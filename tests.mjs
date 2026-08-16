@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
 import {
   addExpiration,
@@ -437,3 +438,10 @@ test("conserva la identidad mínima de Google o Apple", () => {
     providerId: "google.com",
   });
 });
+
+test("la actualización no recarga la app mientras se usa", async () => {
+  const worker = await readFile(new URL("./service-worker.js", import.meta.url), "utf8");
+  assert.equal(worker.includes("client.navigate("), false);
+  assert.match(worker, /self\.clients\.claim\(\)/u);
+});
+

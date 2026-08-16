@@ -1,5 +1,5 @@
-const CACHE = "que-te-falta-v24";
-const ASSETS = ["./", "./index.html", "./styles.css?v=24", "./app.mjs?v=24", "./core.mjs?v=24", "./family-sync.mjs?v=24", "./secure-sharing.mjs?v=24", "./account-sharing.mjs?v=24", "./icon.svg", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png", "./manifest.webmanifest?v=24"];
+const CACHE = "que-te-falta-v25";
+const ASSETS = ["./", "./index.html", "./styles.css?v=25", "./app.mjs?v=25", "./core.mjs?v=25", "./family-sync.mjs?v=25", "./secure-sharing.mjs?v=25", "./account-sharing.mjs?v=25", "./icon.svg", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png", "./manifest.webmanifest?v=25"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(ASSETS)));
@@ -9,12 +9,8 @@ self.addEventListener("install", (event) => {
 self.addEventListener("activate", (event) => {
   event.waitUntil((async () => {
     const keys = await caches.keys();
-    const previousAppCache = keys.some((key) => (key.startsWith("la-compra-v") || key.startsWith("que-te-falta-v")) && key !== CACHE);
     await Promise.all(keys.filter((key) => key !== CACHE).map((key) => caches.delete(key)));
     await self.clients.claim();
-    if (!previousAppCache) return;
-    const windows = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
-    await Promise.all(windows.map((client) => client.navigate(client.url).catch(() => null)));
   })());
 });
 
@@ -41,3 +37,4 @@ self.addEventListener("notificationclick", (event) => {
     })
   );
 });
+
