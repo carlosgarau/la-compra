@@ -21,6 +21,15 @@ Las listas nuevas se comparten únicamente entre cuentas autorizadas mediante Fi
 
 Las listas antiguas compartidas mediante contraseña mantienen durante la transición su cifrado AES-256-GCM en el dispositivo.
 
+Las reglas del servidor están en `database.rules.json`. Antes de publicar una versión que cambie el uso compartido, autentícate con Firebase CLI y despliega únicamente esas reglas:
+
+```bash
+firebase login
+pnpm firebase:deploy:rules
+```
+
+La regla de aceptación fija al invitado como editor; una invitación nunca puede convertirlo en propietario.
+
 ## Desarrollo
 
 Requisitos: Node.js, pnpm y, para compilar iOS, macOS con Xcode 26 o posterior.

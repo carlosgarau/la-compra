@@ -20,7 +20,7 @@ import {
   registerRequest,
   shoppingSummary,
   updateExpiration,
-} from "./core.mjs?v=23";
+} from "./core.mjs?v=24";
 import {
   createFamilyId,
   createFamilySync,
@@ -39,11 +39,11 @@ import {
   normalizeFamilyId,
   sharedStateFrom,
   sharedListIdFromUrl,
-} from "./family-sync.mjs?v=23";
+} from "./family-sync.mjs?v=24";
 import {
   createSharedPasswordCodec,
   validateSharedPassword,
-} from "./secure-sharing.mjs?v=23";
+} from "./secure-sharing.mjs?v=24";
 import {
   ACCOUNT_ACTIVE_LIST_PREFIX,
   acceptListInvite,
@@ -69,7 +69,7 @@ import {
   signOutAccount,
   subscribeAccountList,
   updateAccountListState,
-} from "./account-sharing.mjs?v=23";
+} from "./account-sharing.mjs?v=24";
 
 const STORAGE_KEY = "la-compra-state-v1";
 const DATABASE_URL = "https://la-compra-familiar-default-rtdb.europe-west1.firebasedatabase.app";
@@ -95,7 +95,8 @@ const ICONS = {
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
 
-let state = loadState();
+const appStoreCaptureMode = localCaptureMode();
+let state = appStoreCaptureMode ? createAppStoreCaptureState() : loadState();
 let standaloneListId = sharedListIdFromUrl(window.location.href);
 let pendingAccountInviteId = accountInviteFromUrl(window.location.href);
 let familyId = standaloneListId ? "" : rememberFamilyId();
@@ -116,8 +117,10 @@ let activeListId = standaloneListId ? "standalone" : "main";
 let standaloneList = null;
 let sharedListSyncs = new Map();
 let editingSpecialListId = "";
-let activeView = "list";
-let shoppingMode = false;
+let activeView = appStoreCaptureMode === "caducidad"
+  ? "expiration"
+  : appStoreCaptureMode === "comprados" ? "ideas" : appStoreCaptureMode === "historial" ? "history" : "list";
+let shoppingMode = appStoreCaptureMode === "compra";
 let duplicateQueue = [];
 let currentDuplicate = null;
 let expirationPromptQueue = [];
@@ -132,6 +135,51 @@ let toastTimer = null;
 let nativeNotificationTimer = null;
 let sharedPasswordPrompt = null;
 const unlockingShareIds = new Set();
+
+function localCaptureMode() {
+  if (!["localhost", "127.0.0.1"].includes(window.location.hostname)) return "";
+  const mode = new URL(window.location.href).searchParams.get("captura") || "";
+  return ["lista", "compra", "caducidad", "comprados", "historial"].includes(mode) ? mode : "";
+}
+
+function captureDate(daysFromToday) {
+  const date = new Date();
+  date.setHours(12, 0, 0, 0);
+  date.setDate(date.getDate() + daysFromToday);
+  return date.toISOString().slice(0, 10);
+}
+
+function createAppStoreCaptureState() {
+  const demo = createInitialState();
+  const now = Date.now();
+  const pendingNames = [
+    "tomates",
+    "fresas",
+    "aguacates",
+    "leche",
+    "huevos",
+    "hamburguesas",
+    "arroz",
+    "aceite de oliva",
+    "guisantes congelados",
+  ];
+  for (const name of pendingNames) {
+    const entry = parseEntry(name);
+    demo.items.push(makeItem(entry, now - demo.items.length * 1_000));
+    registerRequest(demo, entry, now - demo.items.length * 86_400_000);
+  }
+  const previousNames = ["café", "yogures", "papel de cocina", "plátanos", "salmón"];
+  previousNames.forEach((name, index) => {
+    const entry = parseEntry(name);
+    registerRequest(demo, entry, now - (index + 10) * 86_400_000);
+    registerPurchase(demo, entry, now - (index + 2) * 86_400_000);
+  });
+  const hamburger = demo.items.find((item) => item.key === "hamburguesa");
+  const strawberries = demo.items.find((item) => item.key === "fresa");
+  if (hamburger) addExpiration(demo, hamburger, captureDate(3), now);
+  if (strawberries) addExpiration(demo, strawberries, captureDate(1), now);
+  return demo;
+}
 
 function loadState() {
   try {
@@ -975,7 +1023,7 @@ async function handleAccountSignOut() {
 }
 
 async function handleDeleteAccount() {
-  if (!accountUser || !confirm("¿Eliminar tu cuenta y todos los datos que te pertenecen? Esta acción no se puede deshacer.")) return;
+  if (!accountUser || !confirm("¿Eliminar tu cuenta y todos los datos que te pertenecen? También se eliminarán para todos las listas de las que seas propietario. Esta acción no se puede deshacer. Apple o Google pueden pedirte que confirmes tu identidad antes de continuar.")) return;
   try {
     await deleteAccountAndData();
     stopAccountDataSync();
@@ -2172,7 +2220,7 @@ window.addEventListener("beforeinstallprompt", (event) => event.preventDefault()
 async function initializeAppUpdates() {
   if (NATIVE.isNative) return;
   if (!("serviceWorker" in navigator)) return;
-  serviceWorkerRegistration = await navigator.serviceWorker.register("./service-worker.js?v=23");
+  serviceWorkerRegistration = await navigator.serviceWorker.register("./service-worker.js?v=24");
   serviceWorkerRegistration.update().catch(() => {});
 }
 
@@ -2216,6 +2264,10 @@ document.addEventListener("la-compra:app-url-open", (event) => {
 
 async function bootstrap() {
   render();
+  if (appStoreCaptureMode) {
+    navigate(activeView);
+    return;
+  }
   if (standaloneListId) await initializeStandaloneListSharing();
   else await initializeFamilySharing();
   if (!standaloneListId) {

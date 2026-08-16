@@ -30,6 +30,10 @@ Valores previstos para la primera versión de **¿Qué te falta?**. Deben copiar
   - Finalidad: funcionalidad de la aplicación y gestión de miembros.
   - Vinculado con la identidad: sí.
   - Usado para seguimiento: no.
+- Foto de perfil: sí, si el proveedor de acceso la facilita.
+  - Finalidad: mostrar la identidad dentro de la lista compartida.
+  - Vinculada con la identidad: sí.
+  - Usada para seguimiento: no.
 - Teléfono, contactos y ubicación: no se recopilan.
 - Audio: no se almacena; el micrófono se activa únicamente al pulsar el botón de voz.
 - Contenido del usuario: sí, únicamente productos, cantidades, listas y caducidades cuando se activa una lista compartida.
@@ -50,18 +54,21 @@ Valores previstos para la primera versión de **¿Qué te falta?**. Deben copiar
   - Usado para seguimiento: no.
 - Servidor: Firebase Authentication y Firebase Realtime Database. El acceso a las listas nuevas está limitado a sus miembros autenticados; los enlaces antiguos con contraseña mantienen su cifrado en el dispositivo durante la transición.
 - URL de privacidad: `https://carlosgarau.github.io/que-te-falta/privacy.html`.
-- URL de opciones de privacidad: vacía; las opciones de borrado están dentro de la aplicación.
+- URL de opciones de privacidad: `https://carlosgarau.github.io/que-te-falta/privacy.html`.
+- Eliminación de cuenta: disponible en Ajustes. La app exige una autenticación reciente y, para cuentas de Apple, revoca la autorización antes de eliminar la cuenta y los datos.
 
-Respuestas publicadas en App Store Connect el 12 de agosto de 2026, después de revisar la sincronización con Firebase y los componentes de voz.
+Respuestas locales revisadas el 16 de agosto de 2026. Antes del reenvío deben contrastarse y publicarse de nuevo en App Store Connect para que coincidan con esta versión.
 
 ## Clasificación por edades
 
 Respuestas confirmadas en App Store Connect con clasificación general 4+:
 
 - Controles parentales y verificación de edad: no.
+- Garantía o estimación de edad: no.
 - Acceso web sin restricciones: no.
 - Contenido generado por usuarios con distribución amplia: no. Las listas solo se comparten con cuentas invitadas expresamente.
 - Red social, mensajería o chat: no.
+- Funciones de red social: no. Las listas son privadas, sin perfiles públicos, publicaciones ni descubrimiento de personas.
 - Publicidad: no.
 - Temas maduros, violencia, sexualidad, drogas, armas o lenguaje ofensivo: ninguno.
 - Información médica, de tratamiento, salud o bienestar: no.
@@ -85,13 +92,13 @@ Respuestas confirmadas en App Store Connect con clasificación general 4+:
 ## Información para TestFlight
 
 - Descripción beta: `Lista familiar por voz con listas compartidas y control de caducidad.`
-- Funciones que probar: voz, lectura en alto, compartir una lista protegida, sincronización entre dos iPhone, notificaciones de caducidad y Atajo de Siri.
+- Funciones que probar: voz, lectura en alto, lista privada entre dos iPhone, invitaciones, notificaciones de caducidad y listas especiales.
 - Correo de comentarios: el correo de la Cuenta de Apple del titular.
 
 ## Información para App Review
 
 - Persona de contacto: Carlos Garau Covas.
-- Cuenta de demostración: no necesaria para revisar las funciones personales. Apple puede usar <strong>Iniciar sesión con Apple</strong> para comprobar el intercambio; en las notas se indicará el flujo exacto.
+- Inicio de sesión obligatorio para revisar la app: no. Las funciones locales se prueban sin cuenta. Para comprobar el intercambio privado, Apple puede usar <strong>Iniciar sesión con Apple</strong>; el flujo exacto y la grabación se incluyen en las notas.
 - Notas: usar las incluidas en `APP_STORE_METADATA.md`.
 - URL de soporte: `https://carlosgarau.github.io/que-te-falta/support.html`.
 - Publicación: manual después de la aprobación.

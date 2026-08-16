@@ -47,6 +47,7 @@ import {
   validateSharedPassword,
 } from "./secure-sharing.mjs";
 import {
+  accountProviderForDeletion,
   accountInviteFromUrl,
   accountStateFrom,
   clearAccountInviteFromUrl,
@@ -396,6 +397,16 @@ test("crea invitaciones de cuenta sin exponer otra lista", () => {
   assert.equal(clearAccountInviteFromUrl(url), "/que-te-falta/");
   assert.equal(new URL(url).searchParams.has("familia"), false);
   assert.equal(new URL(url).searchParams.has("lista"), false);
+});
+
+test("identifica el proveedor que debe revalidarse al eliminar una cuenta", () => {
+  assert.equal(accountProviderForDeletion({ providerId: "apple.com" }), "apple.com");
+  assert.equal(accountProviderForDeletion({ providerData: [{ providerId: "google.com" }] }), "google.com");
+  assert.equal(accountProviderForDeletion({
+    providerId: "firebase",
+    providerData: [{ providerId: "password" }, { providerId: "apple.com" }],
+  }), "apple.com");
+  assert.equal(accountProviderForDeletion({ providerId: "password" }), "");
 });
 
 test("sincroniza la lista familiar sin mezclar listas especiales", () => {

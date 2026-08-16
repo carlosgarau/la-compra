@@ -109,6 +109,20 @@ async function stopSpeechRecognition() {
   await SpeechRecognition.forceStop();
 }
 
+function accountProvider(value) {
+  const providerId = String(value || "").toLowerCase();
+  if (providerId.includes("apple")) return "apple";
+  if (providerId.includes("google")) return "google";
+  return "";
+}
+
+async function nativeAccountSignIn(provider) {
+  if (!FirebaseAuthentication) throw new Error("El acceso seguro no está disponible");
+  return provider === "apple"
+    ? FirebaseAuthentication.signInWithApple()
+    : FirebaseAuthentication.signInWithGoogle();
+}
+
 globalThis.LaCompraNative = {
   isNative,
   async share(data) {
@@ -136,16 +150,28 @@ globalThis.LaCompraNative = {
     },
     async signIn(provider) {
       if (!FirebaseAuthentication) throw new Error("El acceso seguro no está disponible");
-      const result = provider === "apple"
-        ? await FirebaseAuthentication.signInWithApple()
-        : await FirebaseAuthentication.signInWithGoogle();
+      const result = await nativeAccountSignIn(provider);
       return result.user || null;
     },
     async signOut() {
       if (FirebaseAuthentication) await FirebaseAuthentication.signOut();
     },
+    async prepareDeletion(providerId) {
+      const provider = accountProvider(providerId);
+      if (!provider) return;
+      const result = await nativeAccountSignIn(provider);
+      if (provider !== "apple") return;
+      const authorizationCode = result?.credential?.authorizationCode;
+      if (!authorizationCode) {
+        const error = new Error("Apple no ha devuelto el código necesario para revocar el acceso");
+        error.code = "APPLE_REVOCATION_CODE_MISSING";
+        throw error;
+      }
+      await FirebaseAuthentication.revokeAccessToken({ token: authorizationCode });
+    },
     async deleteUser() {
-      if (FirebaseAuthentication) await FirebaseAuthentication.deleteUser();
+      if (!FirebaseAuthentication) return;
+      await FirebaseAuthentication.deleteUser();
     },
     async onChange(callback) {
       await accountAuthListenerHandle?.remove?.().catch(() => {});

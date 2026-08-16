@@ -1,4 +1,4 @@
-# Metadatos propuestos para App Store Connect
+# Metadatos finales para App Store Connect
 
 ## Ficha
 
@@ -19,7 +19,7 @@ Tu lista familiar de casa: compartida, ordenada por familias, con voz y avisos p
 
 ## Descripción
 
-¿Qué te falta? ayuda a organizar la cesta de casa entre varias personas. Para uso personal no necesitas una cuenta; solo te pedimos iniciar sesión con Apple o Google cuando quieras compartir y sincronizar.
+¿Qué te falta? ayuda a organizar la cesta de casa entre varias personas. Para el uso personal no necesitas una cuenta; solo te pedimos iniciar sesión con Apple o Google cuando quieras compartir y sincronizar.
 
 Añade productos escribiendo o hablando, consulta la lista en voz alta y llévala agrupada por familias para ir tachando en el supermercado. Si un producto ya estaba apuntado, la app te pregunta si quieres aumentar la cantidad.
 
@@ -34,14 +34,14 @@ Funciones destacadas:
 - Listas puntuales independientes y compartibles.
 - Productos agrupados por familias.
 - Cantidades y detección de repetidos.
-- Historial de compras y sugerencias de temporada.
+- Historial de compras y sugerencias basadas en compras anteriores.
 - Control de caducidad con notificaciones locales.
 - Sin publicidad, analítica ni seguimiento.
 - Sin registro obligatorio para el uso personal.
 
 ## Palabras clave
 
-`lista,compra,familia,voz,Siri,caducidad,despensa,recordatorios,supermercado,alimentos`
+`lista,compra,familia,voz,caducidad,despensa,recordatorios,supermercado,alimentos,hogar`
 
 ## Novedades de la versión 1.0
 
@@ -49,19 +49,20 @@ Primera versión para iPhone con listas familiares y puntuales, dictado, lectura
 
 ## Notas para App Review
 
-La respuesta ampliada a la solicitud de información de Guideline 2.1 está preparada en `APP_REVIEW_RESPONSE_2026-08-14.md`. Antes de copiarla a App Store Connect hay que sustituir los tres campos entre corchetes por el nombre del vídeo, el modelo exacto del iPhone físico y su versión de iOS.
+La respuesta completa para Guideline 2.1 está preparada en `APP_REVIEW_RESPONSE_2026-08-14.md` con el modelo de iPhone, la versión de iOS y el nombre de la grabación facilitada.
 
 La aplicación no requiere crear una cuenta para las funciones locales, que pueden probarse nada más abrirla. Compartir y sincronizar sí requiere iniciar sesión con Apple o Google. No hay compras integradas, suscripciones, publicidad, analítica ni seguimiento.
 
-Para probar la voz, pulsa el botón del micrófono y acepta los permisos de micrófono y reconocimiento. Para probar notificaciones, añade manualmente un producto en la pestaña Caducidad y selecciona una fecha futura. Para probar el uso compartido, abre Ajustes, inicia sesión con Apple y pulsa <strong>Compartir con la familia</strong>. El destinatario debe iniciar sesión y aceptar la invitación. La cuenta puede eliminarse desde Ajustes > Cuenta > Eliminar mi cuenta y mis datos.
+Para probar la voz, pulsa el botón del micrófono y acepta los permisos de micrófono y reconocimiento. Para probar notificaciones, añade manualmente un producto en la pestaña Caducidad y selecciona una fecha futura. Para probar el uso compartido, abre Ajustes, inicia sesión con Apple y pulsa **Invitar por WhatsApp**. El destinatario debe iniciar sesión y aceptar la invitación. La cuenta puede eliminarse desde Ajustes > Cuenta > Eliminar mi cuenta y mis datos; la aplicación vuelve a confirmar la identidad y revoca la autorización de Apple antes del borrado.
 
 Las listas compartidas son privadas y accesibles solamente para cuentas invitadas. Cada invitación corresponde a una única lista. No existe un feed público, perfiles públicos ni descubrimiento de usuarios; por ello no son aplicables funciones de denuncia o bloqueo de contenido público.
 
-## Capturas recomendadas
+## Capturas finales
 
-1. Lista principal agrupada por familias.
-2. Añadir productos mediante la voz.
-3. Compra en curso con productos marcables.
-4. Caducidades y aviso de congelación.
-5. Lista especial «Navidad» y botón de compartir.
-6. Pantalla de cuenta y miembros, sin mostrar correos reales ni enlaces completos.
+1. Lista habitual agrupada por familias.
+2. Modo `Voy a comprar` con productos marcables.
+3. Productos con fecha de caducidad.
+4. Productos comprados anteriormente.
+5. Historial de compras.
+
+Las cinco capturas deben mostrar únicamente la marca **¿Qué te falta?** y las pestañas actuales `Lista`, `Caducidad`, `Comprados` e `Historial`.

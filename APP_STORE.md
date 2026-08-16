@@ -6,7 +6,7 @@ Estado de este paquete: **proyecto iOS preparado; la compilación se ejecuta en 
 
 - Capacitor 8 con destino mínimo iOS 15.
 - Identificador del paquete: `com.carlosgarau.lacompra`.
-- Versión: `1.0`; compilación: `1`.
+- Versión comercial: `1.0`; el número de compilación lo asigna GitHub Actions en cada subida.
 - Icono de App Store de 1024 × 1024 y pantalla de inicio.
 - Permisos explicados para micrófono y reconocimiento de voz.
 - Compartir nativo, respuesta háptica y notificaciones locales de caducidad.
@@ -15,20 +15,21 @@ Estado de este paquete: **proyecto iOS preparado; la compilación se ejecuta en 
 - Política de privacidad y página de ayuda incluidas en la aplicación.
 - Categoría propuesta: **Compras**; secundaria: **Productividad**.
 
-## Requisitos externos pendientes
+## Pendiente para el nuevo envío
 
-1. Una suscripción activa al Apple Developer Program.
-2. Crear la ficha de la aplicación en App Store Connect.
-3. Mantener vigentes el certificado de distribución y la clave de la API de App Store Connect para la compilación remota.
-4. Publicar `privacy.html` y `support.html` en las URL indicadas en `APP_STORE_METADATA.md` antes de enviar la aplicación a revisión.
-5. Preparar capturas reales en los tamaños solicitados por App Store Connect.
+1. Añadir y publicar el correo de soporte facilitado por Carlos en `support.html`.
+2. Publicar esta versión web y desplegar `database.rules.json` en Firebase.
+3. Ejecutar la compilación remota firmada y subir el nuevo build a TestFlight.
+4. Probar ese build en un iPhone físico, incluida la eliminación de cuenta con Apple y la sincronización con una segunda cuenta.
+5. Sustituir en App Store Connect las capturas, notas de revisión, privacidad y clasificación por edad por las versiones revisadas.
+6. Seleccionar el build nuevo y reenviarlo a App Review con publicación manual.
 
 Desde el 28 de abril de 2026, Apple exige Xcode 26 y el SDK de iOS 26 para nuevas subidas. GitHub ofrece ejecutores estándar `macos-26` con Xcode 26 y su uso es gratuito mientras el repositorio siga siendo público. Fuentes oficiales: [requisitos de subida](https://developer.apple.com/app-store/submitting/), [ejecutores macOS de GitHub](https://docs.github.com/en/actions/reference/runners/github-hosted-runners), [facturación de Actions](https://docs.github.com/en/billing/concepts/product-billing/github-actions), [crear una ficha](https://developer.apple.com/help/app-store-connect/create-an-app-record/add-a-new-app/) y [subir una compilación](https://developer.apple.com/help/app-store-connect/manage-builds/upload-builds/).
 
 ## Archivos de entrega preparados
 
 - `APP_STORE_CONNECT_ANSWERS.md`: respuestas para la ficha, privacidad, edad, cifrado y DSA.
-- `APP_STORE_SCREENSHOTS.md`: formato y guion de las seis capturas reales.
+- `APP_STORE_SCREENSHOTS.md`: formato y guion de las cinco capturas finales.
 - `APP_STORE_ACTIVATION_CHECKLIST.md`: orden exacto de alta, firma, TestFlight y revisión.
 - `.github/workflows/ios-testflight.yml`: compilación firmada, validación y subida manual.
 
@@ -36,7 +37,7 @@ Desde el 28 de abril de 2026, Apple exige Xcode 26 y el SDK de iOS 26 para nueva
 
 El flujo `.github/workflows/ios-xcode26.yml` ejecuta las pruebas, sincroniza Capacitor y compila la aplicación en un equipo remoto `macos-26` con Xcode 26.6. No usa credenciales de Apple y puede comprobar el proyecto antes de terminar la membresía.
 
-El segundo flujo, separado y manual, está preparado en `.github/workflows/ios-testflight.yml`. Firma automáticamente con el perfil vigente y, solo si se selecciona expresamente la opción `upload`, sube el IPA a TestFlight. Los certificados y claves se guardan únicamente como secretos cifrados de GitHub; nunca dentro del repositorio.
+El segundo flujo, separado y manual, está preparado en `.github/workflows/ios-testflight.yml`. Automatiza la firma manual con el perfil App Store vigente y, solo si se selecciona expresamente la opción `upload`, sube el IPA a TestFlight. Los certificados y claves se guardan únicamente como secretos cifrados de GitHub; nunca dentro del repositorio.
 
 ## Alta de Apple Developer desde el iPhone
 
@@ -96,7 +97,7 @@ En App Store Connect, indica:
 - Identificador del dispositivo: identificador aleatorio de la instalación, no vinculado; finalidad «Funcionalidad de la app».
 - Publicidad, analítica, contactos y ubicación: no. El correo se recibe del proveedor elegido únicamente para autenticación y miembros.
 
-La etiqueta de privacidad se publicó en App Store Connect el 12 de agosto de 2026. La app se configuró como gratuita, pública y disponible al publicarse en 175 países o regiones, con España como región base.
+La etiqueta de privacidad publicada el 12 de agosto de 2026 debe volver a contrastarse con `APP_STORE_CONNECT_ANSWERS.md` antes del reenvío, especialmente para nombre, correo, identificador, foto de perfil, contenido de listas e historial. La app se configuró como gratuita, pública y disponible al publicarse en 175 países o regiones, con España como región base.
 
 La aplicación usa AES-GCM mediante Web Crypto y HTTPS, tecnologías estándar proporcionadas por el sistema. `ITSAppUsesNonExemptEncryption` está configurado como `NO` al considerarse cifrado exento de documentación. Hay que confirmar esta respuesta en el cuestionario de exportación de App Store Connect, especialmente si cambia la implementación o la disponibilidad por países. Referencias: [declaración de cifrado](https://developer.apple.com/documentation/Security/complying-with-encryption-export-regulations) y [privacidad de la app](https://developer.apple.com/help/app-store-connect/manage-app-information/manage-app-privacy).
 

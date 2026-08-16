@@ -69,7 +69,12 @@ requireCondition(!infoPlist.includes("UIInterfaceOrientationLandscape"),
 const privacyManifest = file("ios/App/App/PrivacyInfo.xcprivacy");
 for (const requiredText of [
   "<key>NSPrivacyTracking</key>",
+  "NSPrivacyCollectedDataTypeName",
+  "NSPrivacyCollectedDataTypeEmailAddress",
+  "NSPrivacyCollectedDataTypeUserID",
   "NSPrivacyCollectedDataTypeOtherUserContent",
+  "NSPrivacyCollectedDataTypePurchaseHistory",
+  "NSPrivacyCollectedDataTypePhotosorVideos",
   "NSPrivacyCollectedDataTypeDeviceID",
   "NSPrivacyCollectedDataTypePurposeAppFunctionality",
 ]) {
@@ -85,10 +90,70 @@ for (const requiredText of [
 ]) {
   requireCondition(metadata.includes(requiredText), `Los metadatos no contienen ${requiredText}`);
 }
+requireCondition(!metadata.includes(",Siri,"), "Los metadatos no deben anunciar una integración nativa de Siri inexistente");
+
+const accountSharing = file("account-sharing.mjs");
+const nativeBridge = file("native-bridge.mjs");
+requireCondition(accountSharing.includes("prepareDeletion(providerId)"),
+  "La eliminación de cuenta debe revalidar el proveedor antes de borrar datos");
+const accountDeletionImplementation = accountSharing.split("export async function deleteAccountAndData()", 2)[1]
+  ?.split("export async function saveAccountProfile()", 1)[0] || "";
+requireCondition(!accountDeletionImplementation.includes(".catch(() => {})"),
+  "La eliminación de cuenta no debe ocultar fallos que puedan dejar datos huérfanos");
+requireCondition(nativeBridge.includes("FirebaseAuthentication.revokeAccessToken"),
+  "La eliminación de una cuenta de Apple debe revocar su autorización");
+
+const databaseRules = JSON.parse(file("database.rules.json") || "{}");
+requireCondition(databaseRules.rules?.families?.$familyId?.[".write"] === "data.exists()",
+  "Las reglas antiguas no deben permitir crear nuevas familias sin autenticación");
+requireCondition(databaseRules.rules?.sharedLists?.$listId?.[".write"] === "data.exists()",
+  "Las reglas antiguas no deben permitir crear nuevas listas sin autenticación");
+requireCondition(databaseRules.rules?.lists?.$listId?.[".read"]?.includes("auth != null"),
+  "Las listas nuevas deben exigir autenticación para leer");
+const invitedMemberRule = databaseRules.rules?.lists?.$listId?.members?.$uid?.[".write"] || "";
+requireCondition(invitedMemberRule.includes("newData.child('role').val() === 'editor'"),
+  "Una invitación no debe permitir que el invitado se atribuya el rol de propietario");
+requireCondition(invitedMemberRule.includes("child('role').val() === 'editor'"),
+  "El rol aceptado debe coincidir con el rol de editor de la invitación");
+
+const reviewResponse = file("APP_REVIEW_RESPONSE_2026-08-14.md");
+requireCondition(!reviewResponse.includes("[SCREEN_RECORDING_FILENAME]"),
+  "La respuesta a App Review todavía contiene el nombre de vídeo pendiente");
+requireCondition(!reviewResponse.includes("No AI, ads, analytics, payments, or social login are used"),
+  "La respuesta a App Review contradice el acceso con Apple y Google");
+
+const supportPage = file("support.html");
+requireCondition(supportPage.includes("mailto:"),
+  "La página de soporte debe incluir un correo de contacto directo");
+
+const screenshotNames = [
+  "01-lista-habitual.png",
+  "02-voy-a-comprar.png",
+  "03-caducidades.png",
+  "04-comprados.png",
+  "05-historial.png",
+];
+for (const screenshotName of screenshotNames) {
+  const screenshot = pngInfo(`PARA-SUBIR-A-APPLE/${screenshotName}`);
+  if (!screenshot) continue;
+  requireCondition(screenshot.width === 1242 && screenshot.height === 2688,
+    `${screenshotName} debe medir 1242 x 2688 píxeles`);
+  requireCondition(![4, 6].includes(screenshot.colorType),
+    `${screenshotName} no puede contener transparencia`);
+
+  const largeScreenshot = pngInfo(`PARA-SUBIR-A-APPLE-6.9/${screenshotName}`);
+  if (!largeScreenshot) continue;
+  requireCondition(largeScreenshot.width === 1290 && largeScreenshot.height === 2796,
+    `${screenshotName} de 6,9 pulgadas debe medir 1290 x 2796 píxeles`);
+  requireCondition(![4, 6].includes(largeScreenshot.colorType),
+    `${screenshotName} de 6,9 pulgadas no puede contener transparencia`);
+}
 
 for (const requiredPath of [
   "privacy.html",
   "support.html",
+  "firebase.json",
+  ".firebaserc",
   ".github/workflows/ios-xcode26.yml",
   ".github/workflows/ios-testflight.yml",
 ]) {

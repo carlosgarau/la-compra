@@ -46,6 +46,16 @@ export function normalizeAccountUser(user) {
   };
 }
 
+export function accountProviderForDeletion(user) {
+  const providerIds = [
+    user?.providerId,
+    ...(Array.isArray(user?.providerData) ? user.providerData.map((entry) => entry?.providerId) : []),
+  ].filter(Boolean).join(" ").toLowerCase();
+  if (providerIds.includes("apple")) return "apple.com";
+  if (providerIds.includes("google")) return "google.com";
+  return "";
+}
+
 async function loadFirebaseWeb() {
   if (!firebaseModulesPromise) {
     firebaseModulesPromise = Promise.all([
@@ -408,22 +418,35 @@ export async function leaveAccountList(listId) {
 export async function deleteAccountAndData() {
   if (!accountUser) return;
   const uid = accountUser.uid;
+  const providerId = accountProviderForDeletion(accountUser);
+  if (NATIVE.accountAuth?.available) {
+    await NATIVE.accountAuth.prepareDeletion(providerId);
+  } else if (webAuth?.currentUser && providerId) {
+    const { authApi } = await loadFirebaseWeb();
+    const provider = providerId === "apple.com"
+      ? new authApi.OAuthProvider("apple.com")
+      : new authApi.GoogleAuthProvider();
+    await authApi.reauthenticateWithPopup(webAuth.currentUser, provider);
+  }
   const memberships = await listAccountMemberships();
   for (const membership of memberships) {
-    const list = await getAccountList(membership.id).catch(() => null);
-    if (!list) continue;
+    const list = await getAccountList(membership.id);
+    if (!list) {
+      await databaseRequest(`userLists/${encodePathPart(uid)}/${encodePathPart(membership.id)}`, { method: "DELETE" });
+      continue;
+    }
     if (list.meta?.ownerId === uid) {
       const memberIds = Object.keys(list.members || {});
       await Promise.all(memberIds.map((memberId) => databaseRequest(
         `userLists/${encodePathPart(memberId)}/${encodePathPart(membership.id)}`,
         { method: "DELETE" },
-      ).catch(() => {})));
+      )));
       await databaseRequest(`lists/${encodePathPart(membership.id)}`, { method: "DELETE" });
     } else {
-      await leaveAccountList(membership.id).catch(() => {});
+      await leaveAccountList(membership.id);
     }
   }
-  await databaseRequest(`userProfiles/${encodePathPart(uid)}`, { method: "DELETE" }).catch(() => {});
+  await databaseRequest(`userProfiles/${encodePathPart(uid)}`, { method: "DELETE" });
   if (NATIVE.accountAuth?.available) await NATIVE.accountAuth.deleteUser();
   else {
     const { authApi } = await loadFirebaseWeb();

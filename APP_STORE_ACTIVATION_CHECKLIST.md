@@ -24,7 +24,7 @@
 - `APPLE_API_KEY_ID`: identificador de la clave de API.
 - `APPLE_API_ISSUER_ID`: identificador del emisor mostrado en App Store Connect.
 
-El flujo usa firma automática autenticada con la clave de App Store Connect, por lo que obtiene el perfil vigente en cada compilación. Los certificados y claves no deben guardarse en el repositorio ni enviarse por correo o chat.
+El flujo automatiza la firma manual autenticada con la clave de App Store Connect y obtiene el perfil vigente en cada compilación. Los certificados y claves no deben guardarse en el repositorio ni enviarse por correo o chat.
 
 ## Primera compilación
 
@@ -38,9 +38,10 @@ El flujo usa firma automática autenticada con la clave de App Store Connect, po
 
 - [ ] Probar en el iPhone de Carlos.
 - [ ] Probar sincronización con un segundo iPhone.
-- [ ] Generar las seis capturas de `APP_STORE_SCREENSHOTS.md`.
+- [x] Generar las cinco capturas finales de iPhone de 6,5 pulgadas y su copia de 6,9 pulgadas descritas en `APP_STORE_SCREENSHOTS.md`.
 - [x] Completar privacidad, clasificación por edades, disponibilidad y contacto de revisión.
-- [ ] Confirmar cifrado de exportación y completar la declaración DSA.
+- [ ] Confirmar el cifrado exento y la declaración personal de no comerciante antes de reenviar.
+- [ ] Revisar las preguntas de clasificación por edad incorporadas en julio de 2026, incluidas redes sociales y verificación de edad.
 - [ ] Seleccionar la compilación aprobada de TestFlight.
 - [ ] Enviar a App Review únicamente tras una revisión final de la ficha.
 - [ ] Elegir publicación manual para comprobar el resultado antes de hacerla pública.
