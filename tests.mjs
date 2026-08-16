@@ -459,6 +459,24 @@ test("la bienvenida ofrece sincronización entre dispositivos sin bloquear el us
   assert.match(html, /Seguir sin cuenta/u);
 });
 
+test("la actualización reinicia una sola vez la sesión de prueba y vuelve a pedir acceso", async () => {
+  const app = await readFile(new URL("./app.mjs", import.meta.url), "utf8");
+  assert.match(app, /ACCOUNT_SESSION_RESET_KEY = "que-te-falta-account-session-reset-v29"/u);
+  assert.match(app, /if \(user\) await signOutAccount\(\)/u);
+  assert.match(app, /state = createInitialState\(\)/u);
+  assert.match(app, /openAccountDialog\("welcome"\)/u);
+});
+
+test("cerrar sesión olvida la bienvenida pero conserva el flujo de acceso", async () => {
+  const app = await readFile(new URL("./app.mjs", import.meta.url), "utf8");
+  const start = app.indexOf("async function handleAccountSignOut()");
+  const end = app.indexOf("async function handleDeleteAccount()", start);
+  const handler = app.slice(start, end);
+  assert.match(handler, /forgetAccountWelcomeSeen\(\)/u);
+  assert.match(handler, /openAccountDialog\("welcome"\)/u);
+  assert.equal(handler.includes("localStorage.clear()"), false);
+});
+
 test("la interfaz móvil bloquea el desplazamiento lateral involuntario", async () => {
   const styles = await readFile(new URL("./styles.css", import.meta.url), "utf8");
   assert.match(styles, /overflow-x: clip/u);

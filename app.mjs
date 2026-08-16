@@ -20,7 +20,7 @@ import {
   registerRequest,
   shoppingSummary,
   updateExpiration,
-} from "./core.mjs?v=28";
+} from "./core.mjs?v=29";
 import {
   createFamilyId,
   createFamilySync,
@@ -39,11 +39,11 @@ import {
   normalizeFamilyId,
   sharedStateFrom,
   sharedListIdFromUrl,
-} from "./family-sync.mjs?v=28";
+} from "./family-sync.mjs?v=29";
 import {
   createSharedPasswordCodec,
   validateSharedPassword,
-} from "./secure-sharing.mjs?v=28";
+} from "./secure-sharing.mjs?v=29";
 import {
   ACCOUNT_ACTIVE_LIST_PREFIX,
   acceptListInvite,
@@ -69,7 +69,7 @@ import {
   signOutAccount,
   subscribeAccountList,
   updateAccountListState,
-} from "./account-sharing.mjs?v=28";
+} from "./account-sharing.mjs?v=29";
 
 const STORAGE_KEY = "la-compra-state-v1";
 const DATABASE_URL = "https://la-compra-familiar-default-rtdb.europe-west1.firebasedatabase.app";
@@ -78,6 +78,7 @@ const NATIVE = globalThis.LaCompraNative || {};
 const SHARED_PASSWORD_STORAGE_PREFIX = "la-compra-shared-password-v1:";
 const ACCOUNT_MIGRATION_KEY_PREFIX = "que-te-falta-account-migrated:";
 const ACCOUNT_WELCOME_SEEN_KEY = "que-te-falta-account-welcome-seen-v1";
+const ACCOUNT_SESSION_RESET_KEY = "que-te-falta-account-session-reset-v29";
 const ICONS = {
   leaf: '<path d="M19 4C11 4 5 8 5 14c0 3 2 5 5 5 6 0 9-7 9-15Z"/><path d="M5 20c2-5 5-8 10-11"/>',
   fish: '<path d="M4 12c3-5 8-6 13-3l3-3v12l-3-3c-5 3-10 2-13-3Z"/><circle cx="13.5" cy="10.5" r=".7"/>',
@@ -677,6 +678,18 @@ function rememberAccountWelcomeSeen() {
   try { localStorage.setItem(ACCOUNT_WELCOME_SEEN_KEY, "1"); } catch {}
 }
 
+function forgetAccountWelcomeSeen() {
+  try { localStorage.removeItem(ACCOUNT_WELCOME_SEEN_KEY); } catch {}
+}
+
+function shouldResetAccountSession() {
+  try { return localStorage.getItem(ACCOUNT_SESSION_RESET_KEY) !== "1"; } catch { return true; }
+}
+
+function rememberAccountSessionReset() {
+  try { localStorage.setItem(ACCOUNT_SESSION_RESET_KEY, "1"); } catch {}
+}
+
 function maybeOpenAccountWelcome() {
   if (accountUser || pendingAccountInviteId || $("#accountDialog").open) return;
   let seen = false;
@@ -1054,9 +1067,11 @@ async function handleAccountSignOut() {
   stopAccountDataSync();
   await signOutAccount();
   accountUser = null;
+  forgetAccountWelcomeSeen();
   renderFamilySharing();
   $("#settingsDialog").close();
-  showToast("Sesión cerrada. La copia de este móvil se conserva");
+  openAccountDialog("welcome");
+  showToast("Sesión cerrada");
 }
 
 async function handleDeleteAccount() {
@@ -2257,7 +2272,7 @@ window.addEventListener("beforeinstallprompt", (event) => event.preventDefault()
 async function initializeAppUpdates() {
   if (NATIVE.isNative) return;
   if (!("serviceWorker" in navigator)) return;
-  serviceWorkerRegistration = await navigator.serviceWorker.register("./service-worker.js?v=28");
+  serviceWorkerRegistration = await navigator.serviceWorker.register("./service-worker.js?v=29");
   serviceWorkerRegistration.update().catch(() => {});
 }
 
@@ -2308,11 +2323,33 @@ async function bootstrap() {
   if (standaloneListId) await initializeStandaloneListSharing();
   else await initializeFamilySharing();
   if (!standaloneListId) {
+    const resetAccountSession = shouldResetAccountSession();
     initializeAccountAuth({
-      onChange: (user) => onAccountAuthChanged(user).catch(() => setAccountStatus("offline")),
-    }).then(() => maybeOpenAccountWelcome()).catch(() => {
+      onChange: (user) => {
+        if (resetAccountSession && user) return;
+        onAccountAuthChanged(user).catch(() => setAccountStatus("offline"));
+      },
+    }).then(async (user) => {
+      if (resetAccountSession) {
+        if (user) await signOutAccount();
+        stopAccountDataSync();
+        accountUser = null;
+        state = createInitialState();
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        forgetAccountWelcomeSeen();
+        rememberAccountSessionReset();
+        render();
+        openAccountDialog("welcome");
+        return;
+      }
+      maybeOpenAccountWelcome();
+    }).catch(() => {
       accountUser = null;
       renderFamilySharing();
+      if (resetAccountSession) {
+        forgetAccountWelcomeSeen();
+        rememberAccountSessionReset();
+      }
       maybeOpenAccountWelcome();
     });
     if (pendingAccountInviteId) openAccountDialog("invite");
