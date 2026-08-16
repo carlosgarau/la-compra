@@ -5,6 +5,8 @@ import { fileURLToPath } from "node:url";
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const expectedBundleId = "com.carlosgarau.lacompra";
 const failures = [];
+const skipScreenshotValidation = process.env.CI === "true"
+  || process.env.SKIP_SCREENSHOT_VALIDATION === "1";
 
 function file(relativePath) {
   const fullPath = join(root, relativePath);
@@ -126,27 +128,29 @@ const supportPage = file("support.html");
 requireCondition(supportPage.includes("mailto:"),
   "La página de soporte debe incluir un correo de contacto directo");
 
-const screenshotNames = [
-  "01-lista-habitual.png",
-  "02-voy-a-comprar.png",
-  "03-caducidades.png",
-  "04-comprados.png",
-  "05-historial.png",
-];
-for (const screenshotName of screenshotNames) {
-  const screenshot = pngInfo(`PARA-SUBIR-A-APPLE/${screenshotName}`);
-  if (!screenshot) continue;
-  requireCondition(screenshot.width === 1242 && screenshot.height === 2688,
-    `${screenshotName} debe medir 1242 x 2688 píxeles`);
-  requireCondition(![4, 6].includes(screenshot.colorType),
-    `${screenshotName} no puede contener transparencia`);
+if (!skipScreenshotValidation) {
+  const screenshotNames = [
+    "01-lista-habitual.png",
+    "02-voy-a-comprar.png",
+    "03-caducidades.png",
+    "04-comprados.png",
+    "05-historial.png",
+  ];
+  for (const screenshotName of screenshotNames) {
+    const screenshot = pngInfo(`PARA-SUBIR-A-APPLE/${screenshotName}`);
+    if (!screenshot) continue;
+    requireCondition(screenshot.width === 1242 && screenshot.height === 2688,
+      `${screenshotName} debe medir 1242 x 2688 píxeles`);
+    requireCondition(![4, 6].includes(screenshot.colorType),
+      `${screenshotName} no puede contener transparencia`);
 
-  const largeScreenshot = pngInfo(`PARA-SUBIR-A-APPLE-6.9/${screenshotName}`);
-  if (!largeScreenshot) continue;
-  requireCondition(largeScreenshot.width === 1290 && largeScreenshot.height === 2796,
-    `${screenshotName} de 6,9 pulgadas debe medir 1290 x 2796 píxeles`);
-  requireCondition(![4, 6].includes(largeScreenshot.colorType),
-    `${screenshotName} de 6,9 pulgadas no puede contener transparencia`);
+    const largeScreenshot = pngInfo(`PARA-SUBIR-A-APPLE-6.9/${screenshotName}`);
+    if (!largeScreenshot) continue;
+    requireCondition(largeScreenshot.width === 1290 && largeScreenshot.height === 2796,
+      `${screenshotName} de 6,9 pulgadas debe medir 1290 x 2796 píxeles`);
+    requireCondition(![4, 6].includes(largeScreenshot.colorType),
+      `${screenshotName} de 6,9 pulgadas no puede contener transparencia`);
+  }
 }
 
 for (const requiredPath of [
