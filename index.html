@@ -8,10 +8,10 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="¿Qué te falta?" />
     <meta name="description" content="Tu lista familiar, con voz, memoria y sugerencias útiles." />
-    <link rel="manifest" href="manifest.webmanifest?v=26" />
+    <link rel="manifest" href="manifest.webmanifest?v=27" />
     <link rel="icon" href="icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="apple-touch-icon.png" />
-    <link rel="stylesheet" href="styles.css?v=26" />
+    <link rel="stylesheet" href="styles.css?v=27" />
     <title>¿Qué te falta?</title>
   </head>
   <body>
@@ -268,15 +268,15 @@
       <div class="dialog-icon account-icon" aria-hidden="true">
         <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-5 3-8 8-8s8 3 8 8"/></svg>
       </div>
-      <span class="eyebrow">TU CUENTA</span>
+      <span class="eyebrow" id="accountDialogEyebrow">TU CUENTA</span>
       <h2 id="accountDialogTitle">Entra para compartir</h2>
       <p id="accountDialogText">La lista seguirá funcionando sin cuenta en este móvil. Inicia sesión únicamente para compartirla y sincronizarla con tu familia.</p>
       <div class="account-provider-actions">
         <button class="provider-button google" id="googleSignInButton" type="button"><span aria-hidden="true">G</span>Continuar con Google</button>
         <button class="provider-button apple" id="appleSignInButton" type="button"><span aria-hidden="true">●</span>Continuar con Apple</button>
       </div>
-      <small class="account-guidance">No tendrás que crear ni recordar otra contraseña.</small>
-      <button class="secondary account-cancel" id="accountCancelButton" type="button">Ahora no</button>
+      <small class="account-guidance" id="accountDialogGuidance">No tendrás que crear ni recordar otra contraseña.</small>
+      <button class="secondary account-cancel" id="accountCancelButton" type="button">Seguir sin cuenta</button>
     </dialog>
 
     <dialog class="app-dialog invite-dialog" id="inviteDialog">
@@ -377,7 +377,7 @@
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-    <script type="module" src="app.mjs?v=26"></script>
+    <script type="module" src="app.mjs?v=27"></script>
   </body>
 </html>
 

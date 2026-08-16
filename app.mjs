@@ -20,7 +20,7 @@ import {
   registerRequest,
   shoppingSummary,
   updateExpiration,
-} from "./core.mjs?v=26";
+} from "./core.mjs?v=27";
 import {
   createFamilyId,
   createFamilySync,
@@ -39,11 +39,11 @@ import {
   normalizeFamilyId,
   sharedStateFrom,
   sharedListIdFromUrl,
-} from "./family-sync.mjs?v=26";
+} from "./family-sync.mjs?v=27";
 import {
   createSharedPasswordCodec,
   validateSharedPassword,
-} from "./secure-sharing.mjs?v=26";
+} from "./secure-sharing.mjs?v=27";
 import {
   ACCOUNT_ACTIVE_LIST_PREFIX,
   acceptListInvite,
@@ -69,7 +69,7 @@ import {
   signOutAccount,
   subscribeAccountList,
   updateAccountListState,
-} from "./account-sharing.mjs?v=26";
+} from "./account-sharing.mjs?v=27";
 
 const STORAGE_KEY = "la-compra-state-v1";
 const DATABASE_URL = "https://la-compra-familiar-default-rtdb.europe-west1.firebasedatabase.app";
@@ -77,6 +77,7 @@ const SHARE_BASE_URL = "https://carlosgarau.github.io/que-te-falta/";
 const NATIVE = globalThis.LaCompraNative || {};
 const SHARED_PASSWORD_STORAGE_PREFIX = "la-compra-shared-password-v1:";
 const ACCOUNT_MIGRATION_KEY_PREFIX = "que-te-falta-account-migrated:";
+const ACCOUNT_WELCOME_SEEN_KEY = "que-te-falta-account-welcome-seen-v1";
 const ICONS = {
   leaf: '<path d="M19 4C11 4 5 8 5 14c0 3 2 5 5 5 6 0 9-7 9-15Z"/><path d="M5 20c2-5 5-8 10-11"/>',
   fish: '<path d="M4 12c3-5 8-6 13-3l3-3v12l-3-3c-5 3-10 2-13-3Z"/><circle cx="13.5" cy="10.5" r=".7"/>',
@@ -647,11 +648,38 @@ function initializeAccountData(preferredListId = "") {
 
 function openAccountDialog(intent = "") {
   accountDialogIntent = intent;
-  $("#accountDialogTitle").textContent = pendingAccountInviteId ? "Entra para aceptar la invitación" : "Entra para compartir";
+  const welcome = intent === "welcome";
+  $("#accountDialogEyebrow").textContent = welcome ? "TU LISTA EN TODAS PARTES" : "TU CUENTA";
+  $("#accountDialogTitle").textContent = pendingAccountInviteId
+    ? "Entra para aceptar la invitación"
+    : welcome ? "Llévate tu lista a cualquier dispositivo" : "Entra para compartir";
   $("#accountDialogText").textContent = pendingAccountInviteId
     ? "La invitación quedará vinculada a tu cuenta para que solo las personas autorizadas puedan usarla."
-    : "La lista seguirá funcionando sin cuenta en este móvil. Inicia sesión únicamente para compartirla y sincronizarla con tu familia.";
+    : welcome
+      ? "Inicia sesión para abrir la misma lista desde tu iPhone, otro móvil o el ordenador, y compartirla con tu familia."
+      : "Inicia sesión para compartir tu lista de forma privada y mantenerla sincronizada con tu familia.";
+  $("#accountDialogGuidance").textContent = welcome
+    ? "Tus productos seguirán disponibles también si cambias de dispositivo."
+    : "No tendrás que crear ni recordar otra contraseña.";
+  $("#accountCancelButton").textContent = welcome ? "Seguir sin cuenta" : "Ahora no";
   $("#accountDialog").showModal();
+}
+
+function rememberAccountWelcomeSeen() {
+  try { localStorage.setItem(ACCOUNT_WELCOME_SEEN_KEY, "1"); } catch {}
+}
+
+function maybeOpenAccountWelcome() {
+  if (accountUser || pendingAccountInviteId || $("#accountDialog").open) return;
+  let seen = false;
+  try { seen = localStorage.getItem(ACCOUNT_WELCOME_SEEN_KEY) === "1"; } catch {}
+  if (!seen) openAccountDialog("welcome");
+}
+
+function closeAccountDialog() {
+  if (accountDialogIntent === "welcome") rememberAccountWelcomeSeen();
+  accountDialogIntent = "";
+  $("#accountDialog").close();
 }
 
 async function handleAccountSignIn(provider) {
@@ -710,6 +738,7 @@ async function onAccountAuthChanged(user) {
     stopAccountDataSync();
     return;
   }
+  rememberAccountWelcomeSeen();
   if (previousUid && previousUid === user.uid && accountPrimaryList) return;
   if (pendingAccountInviteId) {
     try {
@@ -2097,7 +2126,7 @@ $("#sharedPasswordDialog").addEventListener("cancel", (event) => {
 });
 $("#googleSignInButton").addEventListener("click", () => handleAccountSignIn("google"));
 $("#appleSignInButton").addEventListener("click", () => handleAccountSignIn("apple"));
-$("#accountCancelButton").addEventListener("click", () => $("#accountDialog").close());
+$("#accountCancelButton").addEventListener("click", closeAccountDialog);
 $("#inviteAcceptButton").addEventListener("click", acceptPendingInvite);
 $("#inviteCancelButton").addEventListener("click", () => {
   $("#inviteDialog").close();
@@ -2220,7 +2249,7 @@ window.addEventListener("beforeinstallprompt", (event) => event.preventDefault()
 async function initializeAppUpdates() {
   if (NATIVE.isNative) return;
   if (!("serviceWorker" in navigator)) return;
-  serviceWorkerRegistration = await navigator.serviceWorker.register("./service-worker.js?v=26");
+  serviceWorkerRegistration = await navigator.serviceWorker.register("./service-worker.js?v=27");
   serviceWorkerRegistration.update().catch(() => {});
 }
 
@@ -2273,9 +2302,10 @@ async function bootstrap() {
   if (!standaloneListId) {
     initializeAccountAuth({
       onChange: (user) => onAccountAuthChanged(user).catch(() => setAccountStatus("offline")),
-    }).catch(() => {
+    }).then(() => maybeOpenAccountWelcome()).catch(() => {
       accountUser = null;
       renderFamilySharing();
+      maybeOpenAccountWelcome();
     });
     if (pendingAccountInviteId) openAccountDialog("invite");
   }

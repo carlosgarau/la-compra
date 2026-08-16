@@ -451,3 +451,18 @@ test("el acceso web conserva la sesión en iPhone sin redirección completa", as
   assert.equal(accountSharing.includes("signInWithRedirect(webAuth, authProvider)"), false);
 });
 
+test("la bienvenida ofrece sincronización entre dispositivos sin bloquear el uso local", async () => {
+  const app = await readFile(new URL("./app.mjs", import.meta.url), "utf8");
+  const html = await readFile(new URL("./index.html", import.meta.url), "utf8");
+  assert.match(app, /Llévate tu lista a cualquier dispositivo/u);
+  assert.match(app, /maybeOpenAccountWelcome\(\)/u);
+  assert.match(html, /Seguir sin cuenta/u);
+});
+
+test("la interfaz móvil bloquea el desplazamiento lateral involuntario", async () => {
+  const styles = await readFile(new URL("./styles.css", import.meta.url), "utf8");
+  assert.match(styles, /overflow-x: clip/u);
+  assert.match(styles, /overscroll-behavior-x: none/u);
+  assert.match(styles, /\.list-switcher \{ flex-basis: 100%; flex-wrap: wrap; overflow-x: visible;/u);
+});
+
